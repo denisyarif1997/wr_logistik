@@ -22,6 +22,12 @@ class Penerimaan extends Component
     public $isOpen = false;
     public $search = '';
 
+    public $isShow = false;
+
+    public $showPenerimaan;
+    public $details = [];
+
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -61,6 +67,31 @@ class Penerimaan extends Component
 
         return view('livewire.penerimaan.index', compact('penerimaans', 'pembelians', 'gudangs'));
     }
+
+     public function show($id)
+{
+    $penerimaans = ModelsPenerimaan::with('pembelian', 'gudang')->findOrFail($id);
+
+    $this->penerimaan_id = $penerimaans->id;
+    $this->no_penerimaan = $penerimaans->no_penerimaan;
+    $this->tanggal_terima = $penerimaans->tanggal_terima ? $penerimaans->tanggal_terima->format('Y-m-d') : null;
+    $this->pembelian_id = $penerimaans->pembelian_id;
+    $this->gudang_id = $penerimaans->gudang_id;
+    $this->diterima_oleh = $penerimaans->diterima_oleh;
+
+    // Mapping details ke format yang dipakai form
+    $this->details = $penerimaans->details->map(function ($detail) {
+        return [
+            'barang_id' => $detail->barang_id,
+            'qty_diterima' => $detail->qty_diterima,
+            // 'harga_satuan' => $detail->harga_satuan,
+            // 'subtotal' => $detail->qty * $detail->harga_satuan,
+        ];
+    })->toArray();
+
+    $this->isShow = true;
+    $this->isOpen = true; // supaya form muncul
+}
 
     public function create()
     {

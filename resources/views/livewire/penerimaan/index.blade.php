@@ -20,7 +20,7 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>Id Penerimaan</th>
+                        {{-- <th>Id Penerimaan</th> --}}
                         <th>No. Penerimaan</th>
                         <th>Id Pembelian</th>
                         <th>Tanggal Terima</th>
@@ -37,7 +37,7 @@
                 <tbody>
                     @foreach ($penerimaans as $penerimaan)
                         <tr>
-                            <td>{{ $penerimaan->id }}</td>
+                            {{-- <td>{{ $penerimaan->id }}</td> --}}
                             <td>{{ $penerimaan->no_penerimaan }}</td>
                             <td>{{ $penerimaan->pembelian_id }}</td>
                             <td>{{ $penerimaan->tanggal_terima }}</td>
@@ -50,7 +50,8 @@
                             <td>{{ $penerimaan->updated_at }}</td>
                             <td>
                                 @if ($penerimaan->tanggal_terima != null)
-                                    <span class="badge badge-success">Selesai</span>
+                                    {{-- <span class="badge badge-success">Selesai</span> --}}
+                                 <button wire:click="show({{ $penerimaan->id }})" class="btn btn-sm btn-secondary">Show</button>
                                 @else
                                 <button wire:click="edit({{ $penerimaan->id }})" class="btn btn-sm btn-primary">Edit</button>
                                 <button wire:click="delete({{ $penerimaan->id }})" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>                               
