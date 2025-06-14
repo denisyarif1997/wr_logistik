@@ -25,5 +25,35 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         Route::resource('product',ProductController::class);
         Route::get('/get/subcategory',[ProductController::class,'getsubcategory'])->name('getsubcategory');
         Route::get('/remove-external-img/{id}',[ProductController::class,'removeImage'])->name('remove.image');
+        Route::get('/suppliers', function () {
+            return view('admin.suppliers.index');
+        })->name('suppliers.index');
+        Route::get('/barang', function () {
+            return view('admin.barang.index');
+        })->name('barang.index');
+        Route::get('/penerimaan', function () {
+            return view('admin.penerimaan.index');
+        })->name('penerimaan.index');
+        Route::get('/pembelian', function () {
+            return view('admin.pembelian.index');
+        })->name('pembelian.index');
+        Route::get('/gudang', function () {
+            return view('admin.gudang.index');
+        })->name('gudang.index');
+        Route::get('/departemen', function () {
+            return view('admin.departemen.index');
+        })->name('departemen.index');
+        Route::get('/akun', function () {
+            return view('admin.akun.index');
+        })->name('akun.index');
+        Route::get('/pemakaian', function () {
+            return view('admin.pemakaian.index');
+        })->name('pemakaian.index');
+        Route::get('/stok', function () {
+            return view('admin.stok.index');
+        })->name('stok.index');
+        Route::get('/jurnal', function () {
+            return view('admin.jurnal.index');
+        })->name('jurnal.index');
     });
 });

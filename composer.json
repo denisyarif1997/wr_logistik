@@ -12,6 +12,7 @@
         "laravel/sanctum": "^3.2",
         "laravel/socialite": "^5.11",
         "laravel/tinker": "^2.8",
+        "livewire/livewire": "^3.6",
         "spatie/laravel-permission": "^6.0",
         "twilio/sdk": "^7.14",
         "zalanihir/country-state-city": "^1.0"

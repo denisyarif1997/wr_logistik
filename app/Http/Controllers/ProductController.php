@@ -80,7 +80,7 @@ class ProductController extends Controller
         $product->image = $this->imageService->compressAndStoreImage($request->file('image'), $uniqueSlug, 'product');
         $product->save();
         $this->handleProductSliderImages($request->file('product_images'), $productId);
-        return redirect()->route('admin.product.index')->with('success', 'Product created successfully.');
+        return redirect()->route('admin.product.index')->with('success', value: 'Product created successfully.');
     }
 
     private function handleProductSliderImages($images, $productId)

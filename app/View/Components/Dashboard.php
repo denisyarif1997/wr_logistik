@@ -28,6 +28,15 @@ class Dashboard extends Component
         
         $collection = Collection::count();
         view()->share('collection',$collection);
+
+        $pembelian = \App\Models\Pembelian::count();
+        view()->share('pembelian',$pembelian);
+
+        $penerimaan = \App\Models\Penerimaan::count();
+        view()->share('penerimaan',$penerimaan);
+
+        $detailPemakaian = \App\Models\PemakaianDetail::sum('qty');
+        view()->share('detailPemakaian',$detailPemakaian);
     }
 
     /**

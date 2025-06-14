@@ -175,6 +175,13 @@
     </script>
     <x-alert />
     @yield('js')
+    <script>
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('notify', (message) => {
+                toastr.success(message);
+            });
+        });
+    </script>
 </body>
 
 </html>
