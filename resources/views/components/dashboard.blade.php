@@ -71,7 +71,7 @@
                 <a href="{{ route('admin.user.index') }}" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
-        <div class="col-lg-3 col-6 mb-4">
+        {{-- <div class="col-lg-3 col-6 mb-4">
             <div class="dashboard-box bg-gradient-success">
                 <div class="dashboard-inner">
                     <h3>{{ $category }}</h3>
@@ -82,7 +82,7 @@
                 </div>
                 <a href="{{ route('admin.category.index') }}" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
             </div>
-        </div>
+        </div> --}}
         <div class="col-lg-3 col-6 mb-4">
             <div class="dashboard-box bg-gradient-primary">
                 <div class="dashboard-inner">
@@ -96,13 +96,13 @@
             </div>
         </div>
         <div class="col-lg-3 col-6 mb-4">
-            <div class="dashboard-box bg-gradient-secondary">
+            <div class="dashboard-box bg-gradient-success">
                 <div class="dashboard-inner">
                     <h3>{{ $penerimaan }}</h3>
                     <p>Total Penerimaan</p>
                 </div>
                 <div class="dashboard-icon">
-                    <i class="fas fa-file-pdf"></i>
+                    <i class="fas fa-list-alt"></i>
                 </div>
                 <a href="{{ route('admin.penerimaan.index') }}" class="small-box-footer">View <i class="fas fa-arrow-circle-right"></i></a>
             </div>
