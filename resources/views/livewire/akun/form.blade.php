@@ -17,11 +17,11 @@
             <div class="form-group">
                 <label for="tipe">Tipe</label>
                 <select class="form-control" id="tipe" wire:model="tipe">
-                    <option value="aset">Aset</option>
-                    <option value="liabilitas">Liabilitas</option>
-                    <option value="ekuitas">Ekuitas</option>
-                    <option value="pendapatan">Pendapatan</option>
-                    <option value="beban">Beban</option>
+                    <option value="aset">aset</option>
+                    <option value="kewajiban">kewajiban</option>
+                    <option value="modal">modal</option>
+                    <option value="pendapatan">pendapatan</option>
+                    <option value="beban">beban</option>
                 </select>
                 @error('tipe') <span class="text-danger">{{ $message }}</span>@enderror
             </div>

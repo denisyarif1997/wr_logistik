@@ -55,5 +55,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         Route::get('/jurnal', function () {
             return view('admin.jurnal.index');
         })->name('jurnal.index');
+         Route::get('/pembayaran', function () {
+            return view('admin.pembayaran.index');
+        })->name('pembayaran.index');
     });
 });

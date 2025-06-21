@@ -5,6 +5,8 @@ namespace App\Livewire;
 use App\Models\Gudang;
 use App\Models\Pembelian;
 use App\Models\Penerimaan as ModelsPenerimaan;
+use App\Models\Jurnal;
+use App\Models\JurnalDetail;
 use App\Models\Stok;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +46,7 @@ class Penerimaan extends Component
     public function render()
     {
         $penerimaans = ModelsPenerimaan::with(['pembelian', 'gudang'])
-            ->where('no_penerimaan', 'like', '%'.$this->search.'%')
+            ->where('no_penerimaan', 'like', '%' . $this->search . '%')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -52,7 +54,7 @@ class Penerimaan extends Component
 
         $query->where(function ($q) {
             $q->where('status', 'approved')
-              ->whereDoesntHave('penerimaan');
+                ->whereDoesntHave('penerimaan');
         });
 
         // If we are editing a reception, we should also include its purchase in the list
@@ -63,35 +65,35 @@ class Penerimaan extends Component
         $pembelians = $query->get();
 
         $gudangs = Gudang::all();
-        
+
 
         return view('livewire.penerimaan.index', compact('penerimaans', 'pembelians', 'gudangs'));
     }
 
-     public function show($id)
-{
-    $penerimaans = ModelsPenerimaan::with('pembelian', 'gudang')->findOrFail($id);
+    public function show($id)
+    {
+        $penerimaans = ModelsPenerimaan::with('pembelian', 'gudang')->findOrFail($id);
 
-    $this->penerimaan_id = $penerimaans->id;
-    $this->no_penerimaan = $penerimaans->no_penerimaan;
-    $this->tanggal_terima = $penerimaans->tanggal_terima ? $penerimaans->tanggal_terima->format('Y-m-d') : null;
-    $this->pembelian_id = $penerimaans->pembelian_id;
-    $this->gudang_id = $penerimaans->gudang_id;
-    $this->diterima_oleh = $penerimaans->diterima_oleh;
+        $this->penerimaan_id = $penerimaans->id;
+        $this->no_penerimaan = $penerimaans->no_penerimaan;
+        $this->tanggal_terima = $penerimaans->tanggal_terima ? $penerimaans->tanggal_terima->format('Y-m-d') : null;
+        $this->pembelian_id = $penerimaans->pembelian_id;
+        $this->gudang_id = $penerimaans->gudang_id;
+        $this->diterima_oleh = $penerimaans->diterima_oleh;
 
-    // Mapping details ke format yang dipakai form
-    $this->details = $penerimaans->details->map(function ($detail) {
-        return [
-            'barang_id' => $detail->barang_id,
-            'qty_diterima' => $detail->qty_diterima,
-            // 'harga_satuan' => $detail->harga_satuan,
-            // 'subtotal' => $detail->qty * $detail->harga_satuan,
-        ];
-    })->toArray();
+        // Mapping details ke format yang dipakai form
+        $this->details = $penerimaans->details->map(function ($detail) {
+            return [
+                'barang_id' => $detail->barang_id,
+                'qty_diterima' => $detail->qty_diterima,
+                // 'harga_satuan' => $detail->harga_satuan,
+                // 'subtotal' => $detail->qty * $detail->harga_satuan,
+            ];
+        })->toArray();
 
-    $this->isShow = true;
-    $this->isOpen = true; // supaya form muncul
-}
+        $this->isShow = true;
+        $this->isOpen = true; // supaya form muncul
+    }
 
     public function create()
     {
@@ -133,7 +135,7 @@ class Penerimaan extends Component
         $this->openModal();
     }
 
-    
+
     public function store()
     {
         $this->validate(
@@ -141,10 +143,10 @@ class Penerimaan extends Component
                 ? array_merge($this->rules, ['no_penerimaan' => 'required|unique:penerimaan,no_penerimaan,' . $this->penerimaan_id])
                 : $this->rules
         );
-    
+
         DB::transaction(function () {
             $userId = auth()->id();
-    
+
             $penerimaan = ModelsPenerimaan::updateOrCreate(
                 ['id' => $this->penerimaan_id],
                 [
@@ -156,13 +158,13 @@ class Penerimaan extends Component
                     'updated_user' => $userId,
                 ]
             );
-    
+
             // Jika create baru, tambahkan inserted_user
             if (!$this->penerimaan_id) {
                 $penerimaan->inserted_user = $userId;
                 $penerimaan->save(); // Jangan lupa simpan perubahan inserted_user
             }
-    
+
             // Proses detail dan update stok
             $pembelian = Pembelian::with('details')->find($this->pembelian_id);
             if ($pembelian) {
@@ -171,32 +173,63 @@ class Penerimaan extends Component
                         'barang_id' => $detail->barang_id,
                         'qty_diterima' => $detail->qty,
                     ]);
-    
+
                     $stok = Stok::firstOrNew([
                         'barang_id' => $detail->barang_id,
                         'gudang_id' => $this->gudang_id,
                     ]);
-    
+
                     $stok->stok_akhir = ($stok->stok_akhir ?? 0) + $detail->qty;
                     $stok->save();
                 }
-    
+
                 $pembelian->status = 'received';
                 $pembelian->save();
+
+                // Tambah Jurnal Otomatis
+                $jurnal = Jurnal::create([
+                    'no_jurnal' => 'JU-' . str_pad($penerimaan->id, 5, '0', STR_PAD_LEFT),
+                    'tanggal' => $this->tanggal_terima,
+                    'keterangan' => 'Penerimaan Barang dari Pembelian No ' . $pembelian->no_pembelian,
+                    'referensi_id' => $penerimaan->id,
+                    'referensi_tipe' => 'Penerimaan',
+                    'inserted_user' => $userId,
+                ]);
+
+                // Jumlah total pembelian dari detail (bisa pakai subtotal atau qty * harga)
+                $total = $pembelian->details->sum(function ($detail) {
+                    return $detail->qty * $detail->harga_satuan; // pastikan `harga_satuan` tersedia
+                });
+
+                // Jurnal Detail: Debet ke Persediaan
+                $jurnal->details()->create([
+                    'kode_akun' => '1201',
+                    'nama_akun' => 'Persediaan Barang',
+                    'debit' => $total,
+                    'kredit' => 0,
+                ]);
+
+                // Jurnal Detail: Kredit ke Hutang Usaha
+                $jurnal->details()->create([
+                    'kode_akun' => '2001',
+                    'nama_akun' => 'Hutang Usaha',
+                    'debit' => 0,
+                    'kredit' => $total,
+                ]);
             }
         });
-    
+
         $message = $this->penerimaan_id
             ? 'Penerimaan updated successfully.'
             : 'Penerimaan created successfully.';
-    
+
         $this->dispatch('notify', $message);
         $this->closeModal();
         $this->resetInputFields();
     }
 
-   
-    
+
+
 
     public function delete($id)
     {
@@ -204,6 +237,5 @@ class Penerimaan extends Component
         $penerimaan->update(['deleted_by' => Auth::id()]);
         $penerimaan->delete();
         $this->dispatch('notify', 'Penerimaan deleted successfully.');
-
     }
 }

@@ -77,7 +77,7 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.akun.index') }}" class="nav-link {{ Route::is('admin.akun.index') ? 'active' : '' }}">
                             <i class="far fa-circle nav-icon"></i>
-                            <p>Akun</p>
+                            <p>Coa</p>
                         </a>
                     </li>
                 </ul>
@@ -105,6 +105,13 @@
                             <p>Penerimaan</p>
                         </a>
                     </li>
+                     <li class="nav-item">
+                        <a href="{{ route('admin.pembayaran.index') }}" class="nav-link {{ Route::is('admin.pembayaran.index') ? 'active' : '' }}">
+                            <i class="far fa-circle nav-icon"></i>
+                            <p>Pembayaran</p>
+                        </a>
+                    </li>
+                    
                     <li class="nav-item">
                         <a href="{{ route('admin.pemakaian.index') }}" class="nav-link {{ Route::is('admin.pemakaian.index') ? 'active' : '' }}">
                             <i class="far fa-circle nav-icon"></i>

@@ -31,13 +31,13 @@
                         <th>Kode Barang</th>
                         <th>Nama Barang</th>
                         <th>Satuan</th>
-                        <th>Stok Minimum</th>
-                        <th>Stok Saat Ini</th>
-                        <th>Harga Beli Terakhir</th>
+                        <th>Stok Min</th>
+                        <th>Stok Aktual</th>
+                        <th>Harga Beli</th>
                         <th>Created By</th>
-                        <th>Created At</th>
+                        {{-- <th>Created At</th> --}}
                         <th>Updated By</th>
-                        <th>Updated At</th>
+                        {{-- <th>Updated At</th> --}}
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -52,9 +52,9 @@
                             <td>{{ $barang->stok_aktual ?? 0 }}</td>
                             <td>{{ $barang->harga_beli_terakhir }}</td>
                             <td>{{ $barang->creator->name ?? '-' }}</td>
-                            <td>{{ $barang->created_at }}</td>
+                            {{-- <td>{{ $barang->created_at }}</td> --}}
                             <td>{{ $barang->updater->name ?? '-' }}</td>
-                            <td>{{ $barang->updated_at }}</td>
+                            {{-- <td>{{ $barang->updated_at }}</td> --}}
                             <td>
                                 <button wire:click="edit({{ $barang->id }})" class="btn btn-sm btn-primary">Edit</button>
                                 <button wire:click="delete({{ $barang->id }})" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
