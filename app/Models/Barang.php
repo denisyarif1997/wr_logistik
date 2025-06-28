@@ -30,6 +30,10 @@ class Barang extends Model
     {
         return $this->hasMany(Stok::class);
     }
+    public function satuan()
+    {
+        return $this->belongsTo(Satuan::class, 'satuan', 'kode_satuan');
+    }
     public function creator()
     {
         return $this->belongsTo(User::class, 'inserted_user');

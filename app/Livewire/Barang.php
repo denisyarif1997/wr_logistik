@@ -36,13 +36,15 @@ class Barang extends Component
     public function render()
     {
         $searchTerm = '%' . $this->search . '%';
-
+       // nggunakan query builder untuk mengambil data barang dengan stok aktual
         $barangs = ModelsBarang::query()
             ->select([
                 'barang.*',
+                'satuan.kode_satuan',
                 DB::raw('COALESCE(SUM(stok.stok_akhir), 0) as stok_aktual')
             ])
             ->leftJoin('stok', 'barang.id', '=', 'stok.barang_id')
+            ->leftJoin('satuan', 'barang.satuan', '=' , 'satuan.id' )
             ->when($this->search, callback: function ($query) use ($searchTerm) {
                 $query->whereRaw("barang.nama_barang LIKE ?", [$searchTerm])
                     // Jika ingin kolom lain juga, bisa tambahkan or:
@@ -52,15 +54,16 @@ class Barang extends Component
                 'barang.id',
                 'barang.kode_barang',
                 'barang.nama_barang',
-                'barang.satuan',
+                'satuan.kode_satuan',
                 'barang.stok_minimum',
                 'barang.harga_beli_terakhir',
                 'barang.created_at'
             ])
             ->orderBy('barang.created_at', 'desc')
             ->paginate(10);
-
-        return view('livewire.barang.index', compact('barangs'));
+        $satuans = \App\Models\Satuan::all();
+            // dd($satuans);
+        return view('livewire.barang.index', compact('barangs','satuans'));
     }
 
 

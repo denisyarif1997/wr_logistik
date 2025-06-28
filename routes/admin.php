@@ -58,5 +58,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
          Route::get('/pembayaran', function () {
             return view('admin.pembayaran.index');
         })->name('pembayaran.index');
+        Route::get('/satuan', function () {
+            return view('admin.satuan.index');
+        })->name('satuan.index');
     });
 });

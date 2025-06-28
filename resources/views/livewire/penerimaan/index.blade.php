@@ -20,7 +20,7 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        {{-- <th>Id Penerimaan</th> --}}
+                        <th>Id</th>
                         <th>No. Penerimaan</th>
                         <th>Id Pembelian</th>
                         <th>Tanggal Terima</th>
@@ -37,7 +37,7 @@
                 <tbody>
                     @foreach ($penerimaans as $penerimaan)
                         <tr>
-                            {{-- <td>{{ $penerimaan->id }}</td> --}}
+                            <td>{{ $penerimaan->id }}</td>
                             <td>{{ $penerimaan->no_penerimaan }}</td>
                             <td>{{ $penerimaan->pembelian_id }}</td>
                             <td>{{ $penerimaan->tanggal_terima }}</td>

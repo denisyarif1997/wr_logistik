@@ -16,8 +16,14 @@
             </div>
             <div class="form-group">
                 <label for="satuan">Satuan</label>
-                <input type="text" class="form-control" id="satuan" placeholder="Enter Satuan" wire:model="satuan">
+                <select wire:model="satuan" class="form-control">
+                    <option value="">Select Satuan</option>
+                    @foreach ($satuans as $satuan)
+                        <option value="{{ $satuan->id }}">{{ $satuan->kode_satuan }}</option>
+                    @endforeach
+                </select>
                 @error('satuan') <span class="text-danger">{{ $message }}</span>@enderror
+
             </div>
             <div class="form-group">
                 <label for="stok_minimum">Stok Minimum</label>

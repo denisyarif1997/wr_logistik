@@ -41,8 +41,8 @@
             </li>
 
             <!-- MASTER DATA -->
-            <li class="nav-item has-treeview {{ Route::is('admin.barang.*') || Route::is('admin.suppliers.*') || Route::is('admin.gudang.*') || Route::is('admin.departemen.*') || Route::is('admin.akun.*') ? 'menu-open' : '' }}">
-                <a href="#" class="nav-link {{ Route::is('admin.barang.*') || Route::is('admin.suppliers.*') || Route::is('admin.gudang.*') || Route::is('admin.departemen.*') || Route::is('admin.akun.*') ? 'active' : '' }}">
+            <li class="nav-item has-treeview {{ Route::is('admin.barang.*') || Route::is('admin.suppliers.*') || Route::is('admin.gudang.*') ||Route::is('admin.satuan.*') || Route::is('admin.departemen.*') || Route::is('admin.akun.*') ? 'menu-open' : '' }}">
+                <a href="#" class="nav-link {{ Route::is('admin.barang.*') || Route::is('admin.suppliers.*') || Route::is('admin.gudang.*') || Route::is('admin.satuan.*') || Route::is('admin.departemen.*') || Route::is('admin.akun.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-database"></i>
                     <p>
                         Master Data
@@ -54,6 +54,12 @@
                         <a href="{{ route('admin.barang.index') }}" class="nav-link {{ Route::is('admin.barang.index') ? 'active' : '' }}">
                             <i class="far fa-circle nav-icon"></i>
                             <p>Barang</p>
+                        </a>
+                    </li>
+                      <li class="nav-item">
+                        <a href="{{ route('admin.satuan.index') }}" class="nav-link {{ Route::is('admin.satuan.index') ? 'active' : '' }}">
+                            <i class="far fa-circle nav-icon"></i>
+                            <p>Satuan Barang</p>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -84,8 +90,8 @@
             </li>
 
             <!-- TRANSAKSI -->
-            <li class="nav-item has-treeview {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*') ? 'menu-open' : '' }}">
-                <a href="#" class="nav-link {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*') ? 'active' : '' }}">
+            <li class="nav-item has-treeview {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*')|| Route::is('admin.pembayaran.*') ? 'menu-open' : '' }}">
+                <a href="#" class="nav-link {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*')|| Route::is('admin.pembayaran.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-exchange-alt"></i>
                     <p>
                         Transaksi

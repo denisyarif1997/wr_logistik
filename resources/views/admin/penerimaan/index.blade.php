@@ -1,7 +1,7 @@
 <x-admin>
-    @section('title','Pembayaran')
+    @section('title','Penerimaan Barang')
     <div>
-        @livewire('pembayaran')
+        @livewire('penerimaan')
     </div>
     @livewireScripts
 </x-admin> 

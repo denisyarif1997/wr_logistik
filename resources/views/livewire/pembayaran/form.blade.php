@@ -14,12 +14,12 @@
     <div class="card-body">
         <form wire:submit.prevent="store">
             <div class="form-group">
-                <label for="penerimaan_id">No. Penerimaan</label>
+                <label for="penerimaan_id">Pilih Penerimaan</label>
                 <select class="form-control" id="penerimaan_id" wire:model="penerimaan_id" @if($isShow) disabled @endif>
                     <option value="">Select Penerimaan</option>
                     @foreach($penerimaans as $penerimaan)
                         <option value="{{ $penerimaan->id }}">
-                            {{ $penerimaan->no_penerimaan }} - {{ $penerimaan->tanggal_terima }} - Gudang: {{ $penerimaan->gudang->nama_gudang ?? '-' }}
+                           Id Penerimaan : {{ $penerimaan->id }} - No Faktur : {{ $penerimaan->no_penerimaan }} - Tanggal Terima : {{ $penerimaan->tanggal_terima }} - Gudang : {{ $penerimaan->gudang->nama_gudang ?? '-' }}
                         </option>
                     @endforeach
                 </select>

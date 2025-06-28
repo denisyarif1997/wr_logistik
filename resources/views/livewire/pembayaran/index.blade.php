@@ -20,6 +20,7 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        <th>Id</th>
                         <th>No. Penerimaan</th>
                         <th>Tanggal Bayar</th>
                         <th>Jumlah Bayar</th>
@@ -35,6 +36,7 @@
                 <tbody>
                     @foreach ($pembayarans as $pembayaran)
                         <tr>
+                            <td>{{ $pembayaran->id }}</td>
                             <td>{{ $pembayaran->penerimaan->no_penerimaan ?? '-' }}</td>
                             <td>{{ $pembayaran->tanggal_bayar }}</td>
                             <td>{{ number_format($pembayaran->jumlah_bayar, 2) }}</td>

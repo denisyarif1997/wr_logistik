@@ -47,7 +47,7 @@
                             {{-- <td>{{ $barang->id }}</td> --}}
                             <td>{{ $barang->kode_barang }}</td>
                             <td>{{ $barang->nama_barang }}</td>
-                            <td>{{ $barang->satuan }}</td>
+                            <td>{{ $barang->kode_satuan }}</td>
                             <td>{{ $barang->stok_minimum }}</td>
                             <td>{{ $barang->stok_aktual ?? 0 }}</td>
                             <td>{{ $barang->harga_beli_terakhir }}</td>

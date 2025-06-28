@@ -21,7 +21,7 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>Id Pembelian</th>
+                        <th>Id</th>
                         <th>No Pembelian</th>
                         <th>Tanggal PO</th>
                         <th>Supplier</th>
