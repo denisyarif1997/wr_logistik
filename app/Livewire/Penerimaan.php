@@ -6,6 +6,7 @@ use App\Models\Gudang;
 use App\Models\Pembelian;
 use App\Models\Penerimaan as ModelsPenerimaan;
 use App\Models\Jurnal;
+use App\Models\Akun;
 use App\Models\JurnalDetail;
 use App\Models\Stok;
 use Illuminate\Support\Facades\Auth;
@@ -23,9 +24,7 @@ class Penerimaan extends Component
     public $penerimaan_id;
     public $isOpen = false;
     public $search = '';
-
     public $isShow = false;
-
     public $showPenerimaan;
     public $details = [];
 
@@ -203,7 +202,7 @@ class Penerimaan extends Component
 
                 // Jurnal Detail: Debet ke Persediaan
                 $jurnal->details()->create([
-                    'kode_akun' => '1201',
+                    'akun_id' => 4,
                     'nama_akun' => 'Persediaan Barang',
                     'debit' => $total,
                     'kredit' => 0,
@@ -211,7 +210,7 @@ class Penerimaan extends Component
 
                 // Jurnal Detail: Kredit ke Hutang Usaha
                 $jurnal->details()->create([
-                    'kode_akun' => '2001',
+                    'akun_id' => 5,
                     'nama_akun' => 'Hutang Usaha',
                     'debit' => 0,
                     'kredit' => $total,
