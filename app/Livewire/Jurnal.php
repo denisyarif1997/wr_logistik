@@ -50,7 +50,7 @@ class Jurnal extends Component
             $query->where('j.no_jurnal', 'like', "%{$search}%")
                 ->orWhere('j.keterangan', 'like', "%{$search}%");
         })
-        ->orderBy('j.tanggal', 'desc')
+        ->orderBy('j.id', 'desc')
         ->paginate(10);
 
     // return view('livewire.jurnal.index', [

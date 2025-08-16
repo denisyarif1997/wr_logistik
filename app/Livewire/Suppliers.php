@@ -13,7 +13,7 @@ class Suppliers extends Component
 
     protected $paginationTheme = 'bootstrap';
 
-    public $kode_supplier, $nama_supplier, $alamat, $telepon, $email, $npwp;
+    public $nama_supplier, $alamat, $telepon, $email, $npwp;
     public $supplier_id;
     public $isOpen = false;
     public $search = '';
@@ -24,7 +24,6 @@ class Suppliers extends Component
     }
 
     protected $rules = [
-        'kode_supplier' => 'required',
         'nama_supplier' => 'required',
         'alamat'        => 'required',
         'telepon'       => 'required',
@@ -58,7 +57,6 @@ class Suppliers extends Component
         $this->telepon        = $supplier->telepon;
         $this->email          = $supplier->email;
         $this->npwp           = $supplier->npwp;
-
         $this->openModal();
     }
 
@@ -76,6 +74,7 @@ class Suppliers extends Component
                 'npwp'          => $this->npwp,
                 'inserted_user' => $this->supplier_id ? null : Auth::id(),
                 'updated_user'  => $this->supplier_id ? Auth::id() : null,
+                
             ]
         );
 
@@ -86,7 +85,8 @@ class Suppliers extends Component
         $this->dispatch('notify', $message);
 
         $this->closeModal();
-        $this->resetInputFields();
+        $this->resetInputFields();       
+         
     }
 
     public function delete($id)

@@ -85,6 +85,7 @@ class Pembelian extends Component
     public function create()
     {
         $this->resetInputFields();
+        $this->no_po = $this->generateNoPO(); // Set nomor PO otomatis
         $this->openModal();
     }
 
@@ -222,6 +223,27 @@ class Pembelian extends Component
 }
 
     
+public function generateNoPO()
+{
+    // Format: PO-YYYYMMDD-001
+    $today = now()->format('Ymd');
+    $prefix = 'PO-' . $today . '-';
+
+    // Ambil nomor terakhir hari ini
+    $last = ModelsPembelian::whereDate('created_at', now())
+        ->where('no_po', 'like', $prefix . '%')
+        ->orderBy('no_po', 'desc')
+        ->first();
+
+    if ($last) {
+        $lastNumber = (int) substr($last->no_po, -3);
+        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+    } else {
+        $newNumber = '001';
+    }
+
+    return $prefix . $newNumber;
+}
 
 
     public function delete($id)
@@ -239,4 +261,35 @@ class Pembelian extends Component
     {
         $this->resetPage();
     }
+
+
+public function validatePembelian($id)
+{
+    $pembelian = ModelsPembelian::find($id);
+
+    if ($pembelian && strtolower($pembelian->status) === 'draft') {
+        $pembelian->status = 'approved';
+        $pembelian->save();
+
+        session()->flash('message', 'Pembelian berhasil di-approve.');
+    } else {
+        session()->flash('message', 'Validasi gagal. Status pembelian tidak sesuai.');
+    }
+}
+
+public function unvalidasi($id)
+{
+    $pembelian = ModelsPembelian::find($id);
+
+    if ($pembelian && strtolower($pembelian->status) === 'approved') {
+        $pembelian->status = 'draft';
+        $pembelian->save();
+
+        session()->flash('message', 'Approval berhasil dibatalkan.');
+    } else {
+        session()->flash('message', 'Unapprove gagal. Status pembelian tidak sesuai.');
+    }
+}
+
+
 }

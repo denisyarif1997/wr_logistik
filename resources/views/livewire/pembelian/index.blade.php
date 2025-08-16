@@ -10,11 +10,12 @@
             @if($isOpen)
                 @include('livewire.pembelian.form')
             @endif
-        
+
 
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <input wire:model.debounce.300ms="search" type="text" class="form-control" placeholder="Search by PO Number...">
+                    <input wire:model.debounce.300ms="search" type="text" class="form-control"
+                        placeholder="Search by PO Number...">
                 </div>
             </div>
 
@@ -31,6 +32,7 @@
                         <th>Updated By</th>
                         <th>Updated At</th>
                         <th>Action</th>
+                        <th>Validasi Pembelian</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -46,15 +48,36 @@
                             <td>{{ $pembelian->updater->name ?? '-' }}</td>
                             <td>{{ $pembelian->updated_at }}</td>
                             {{-- <td>{{ $pembelian->deleter->name ?? '-' }}</td> --}}
-                            
+
+                            <td>
+                                @if(strtolower($pembelian->status) === 'approved')
+                                    <button wire:click="show({{ $pembelian->id }})"
+                                        class="btn btn-sm btn-secondary">Show</button>
+                                @elseif(strtolower($pembelian->status) === 'received')
+                                    <button wire:click="show({{ $pembelian->id }})"
+                                        class="btn btn-sm btn-secondary">Show</button>
+                                @else
+                                    <button wire:click="edit({{ $pembelian->id }})" class="btn btn-sm btn-primary">Edit</button>
+                                    <button wire:click="delete({{ $pembelian->id }})" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Are you sure?');">Delete</button>
+                                @endif
+                            </td>
+
                             <td>
                                 @if(strtolower($pembelian->status) !== 'received')
-                                    <button wire:click="edit({{ $pembelian->id }})" class="btn btn-sm btn-primary">Edit</button>
-                                    <button wire:click="delete({{ $pembelian->id }})" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?');">Delete</button>
+                                    @if(strtolower($pembelian->status) === 'draft')
+                                        <button wire:click="validatePembelian({{ $pembelian->id }})" class="btn btn-sm btn-success"
+                                            onclick="return confirm('Yakin setujui pembelian ini?');">Approve</button>
+                                    @elseif(strtolower($pembelian->status) === 'approved')
+                                        <button wire:click="unvalidasi({{ $pembelian->id }})" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Yakin batalkan approval?');">Unapprove</button>
+                                    @endif
                                 @else
-                                    <button wire:click="show({{ $pembelian->id }})" class="btn btn-sm btn-secondary">Show</button>
+                                    <button wire:click="show({{ $pembelian->id }})"
+                                        class="btn btn-sm btn-secondary">Show</button>
                                 @endif
-                            </td>                            
+                            </td>
+
                         </tr>
                     @endforeach
                 </tbody>
@@ -63,4 +86,4 @@
             {{ $pembelians->links() }}
         </div>
     </div>
-</div> 
+</div>
