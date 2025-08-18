@@ -13,7 +13,14 @@
 
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <input wire:model.debounce.300ms="search" type="text" class="form-control" placeholder="Search by name...">
+                    <div class="input-group">
+                        <input wire:model.defer="search" wire:keydown.enter="$refresh" type="text" class="form-control" placeholder="Search">
+                        <div class="input-group-append">
+                            <button wire:click="$refresh" class="btn btn-primary" type="button">
+                                <i class="fas fa-search"></i> Cari
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
