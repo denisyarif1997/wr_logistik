@@ -1,0 +1,83 @@
+/* =============================
+   Dashboard Modern Style
+   Author: Deni Sarifudin
+   ============================= */
+
+.dashboard-box {
+    border-radius: 18px;
+    padding: 24px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+    background-size: 200% 200%;
+}
+
+.dashboard-box:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.15);
+    background-position: right center;
+}
+
+.dashboard-inner h3 {
+    font-size: 40px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.dashboard-inner p {
+    margin-top: 8px;
+    font-size: 17px;
+    opacity: 0.9;
+}
+
+.dashboard-icon {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 50px;
+    opacity: 0.2;
+    transform: rotate(-10deg);
+}
+
+.small-box-footer {
+    display: inline-block;
+    margin-top: 20px;
+    color: #fff !important;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.3s ease;
+}
+
+.small-box-footer:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+/* Gradient Themes */
+.bg-gradient-info {
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #00b09b, #96c93d);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+}
+
+.bg-gradient-secondary {
+    background: linear-gradient(135deg, #606c88, #3f4c6b);
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+    .dashboard-inner h3 {
+        font-size: 28px;
+    }
+    .dashboard-icon {
+        font-size: 36px;
+    }
+}

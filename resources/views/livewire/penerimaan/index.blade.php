@@ -31,13 +31,13 @@
                         <th>No. Penerimaan</th>
                         <th>Id Pembelian</th>
                         <th>Tanggal Terima</th>
-                        <th>No. Pembelian</th>
+                        <th>No. Po</th>
                         <th>Gudang</th>
                         <th>Diterima Oleh</th>
                         <th>Created By</th>
                         <th>Created At</th>
-                        <th>Updatet By</th>
-                        <th>Updatet At</th>
+                        {{-- <th>Updatet By</th> --}}
+                        {{-- <th>Updatet At</th> --}}
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -53,8 +53,8 @@
                             <td>{{ $penerimaan->diterima_oleh }}</td>
                             <td>{{ $penerimaan->creator->name ?? '-' }}</td>
                             <td>{{ $penerimaan->created_at }}</td>
-                            <td>{{ $penerimaan->updater->name ?? '-' }}</td>
-                            <td>{{ $penerimaan->updated_at }}</td>
+                            {{-- <td>{{ $penerimaan->updater->name ?? '-' }}</td> --}}
+                            {{-- <td>{{ $penerimaan->updated_at }}</td> --}}
                             <td>
                                 @if ($penerimaan->tanggal_terima != null)
                                     {{-- <span class="badge badge-success">Selesai</span> --}}

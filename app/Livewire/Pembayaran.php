@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Penerimaan;
+use App\Models\Pembelian;
 use App\Models\Pembayaran as ModelsPembayaran;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -46,9 +47,14 @@ class Pembayaran extends Component
 
         $penerimaans = Penerimaan::latest()->get();
 
+        // $po = Pembelian::latest()->get();
+
+        // dd($pembayarans);
+
         return view('livewire.pembayaran.index', [
             'pembayarans' => $pembayarans,
             'penerimaans' => $penerimaans,
+            // 'po' => $po,
         ]);
     }
 

@@ -14,7 +14,7 @@
                 <a href="#" class="nav-link {{ Route::is('admin.user.*') || Route::is('admin.role.*') || Route::is('admin.permission.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-users-cog"></i>
                     <p>
-                        Manajemen Pengguna
+                        Pengguna
                         <i class="right fas fa-angle-left"></i>
                     </p>
                 </a>
@@ -102,7 +102,7 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.pembelian.index') }}" class="nav-link {{ Route::is('admin.pembelian.index') ? 'active' : '' }}">
                             <i class="far fa-circle nav-icon"></i>
-                            <p>Pembelian</p>
+                            <p>Purchase Order</p>
                         </a>
                     </li>
                     <li class="nav-item">

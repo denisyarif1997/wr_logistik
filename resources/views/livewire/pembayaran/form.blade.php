@@ -28,7 +28,7 @@
 
             <div class="form-group">
                 <label for="tanggal_bayar">Tanggal Bayar</label>
-                <input type="date" class="form-control" id="tanggal_bayar" wire:model="tanggal_bayar" @if($isShow) readonly @endif>
+                <input type="date" class="form-control" id="tanggal_bayar" wire:model="tanggal_bayar" value="{{ date('Y-m-d') }}" @if($isShow) readonly @endif>
                 @error('tanggal_bayar') <span class="text-danger">{{ $message }}</span>@enderror
             </div>
 
@@ -40,7 +40,15 @@
 
             <div class="form-group">
                 <label for="metode_bayar">Metode Bayar</label>
-                <input type="text" class="form-control" id="metode_bayar" placeholder="Contoh: tunai, transfer" wire:model="metode_bayar" @if($isShow) readonly @endif>
+                <select class="form-control" id="metode_bayar" wire:model="metode_bayar" @if($isShow) disabled @endif>
+                    <option value="">Pilih Metode Pembayaran</option>
+                    <option value="tunai">Tunai</option>
+                    <option value="transfer">Transfer Bank</option>
+                    <option value="debit">Kartu Debit</option>
+                    <option value="credit">Kartu Kredit</option>
+                    <option value="qris">QRIS</option>
+                    <option value="ewallet">E-Wallet</option>
+                </select>
                 @error('metode_bayar') <span class="text-danger">{{ $message }}</span>@enderror
             </div>
 
