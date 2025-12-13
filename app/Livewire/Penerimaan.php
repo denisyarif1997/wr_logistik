@@ -28,6 +28,12 @@ class Penerimaan extends Component
     public $showPenerimaan;
     public $details = [];
 
+    // Financial details (Editable, initialized from PO)
+    public $ppn = 0;
+    public $diskon = 0;
+    public $biaya_lain = 0;
+    public $ppn_rate = 0; // PPN rate for calculation
+
 
     public function updatingSearch()
     {
@@ -40,6 +46,14 @@ class Penerimaan extends Component
         'pembelian_id' => 'required|exists:pembelian,id',
         'gudang_id' => 'required|exists:gudang,id',
         'diterima_oleh' => 'required',
+        'details.*.barang_id' => 'required|exists:barang,id',
+        'details.*.qty_diterima' => 'required|numeric|min:0',
+        'details.*.harga_satuan' => 'required|numeric|min:0',
+        'details.*.diskon' => 'nullable|numeric|min:0',
+        'details.*.ppn' => 'nullable|numeric|min:0',
+        'ppn' => 'nullable|numeric|min:0',
+        'diskon' => 'nullable|numeric|min:0',
+        'biaya_lain' => 'nullable|numeric|min:0',
     ];
 
     public function render()
@@ -56,7 +70,6 @@ class Penerimaan extends Component
                 ->whereDoesntHave('penerimaan');
         });
 
-        // If we are editing a reception, we should also include its purchase in the list
         if ($this->pembelian_id) {
             $query->orWhere('id', $this->pembelian_id);
         }
@@ -69,29 +82,179 @@ class Penerimaan extends Component
         return view('livewire.penerimaan.index', compact('penerimaans', 'pembelians', 'gudangs'));
     }
 
+    public function mount()
+    {
+        // Check if there's a penerimaan to show from session
+        if (session()->has('showPenerimaanId')) {
+            $penerimaanId = session()->pull('showPenerimaanId');
+            $this->show($penerimaanId);
+        }
+    }
+
+    public function updatedPembelianId($value)
+    {
+        if ($value) {
+            $pembelian = Pembelian::with(['details.barang'])->find($value);
+            if ($pembelian) {
+                // Initialize from PO
+                $this->ppn = $pembelian->ppn;
+                $this->diskon = $pembelian->diskon;
+                $this->biaya_lain = $pembelian->biaya_lain;
+                
+                // Calculate reverse PPN Rate from PO
+                $poSubtotal = $pembelian->details->sum('subtotal');
+                $taxable = max(0, $poSubtotal - $pembelian->diskon);
+                if ($taxable > 0 && $pembelian->ppn > 0) {
+                    $this->ppn_rate = round(($pembelian->ppn / $taxable) * 100, 2);
+                } else {
+                    $this->ppn_rate = 0;
+                }
+
+                $this->details = $pembelian->details->map(function ($detail) {
+                    $qty = $detail->qty;
+                    $harga = $detail->harga_satuan;
+                    $diskon = $detail->diskon ?? 0; // per unit
+                    $ppn_rate = $detail->ppn ?? 0; // percentage
+                    
+                    // Calculate DPP (Dasar Pengenaan Pajak)
+                    $dpp = ($qty * $harga) - ($qty * $diskon);
+                    
+                    // Calculate PPN Amount based on percentage
+                    $ppn_amount = $dpp * ($ppn_rate / 100);
+                    
+                    // Subtotal = DPP + PPN Amount
+                    $subtotal = $dpp + $ppn_amount;
+                    
+                    return [
+                        'barang_id' => $detail->barang_id,
+                        'nama_barang' => $detail->barang->nama_barang ?? 'Unknown',
+                        'qty_po' => $qty,
+                        'qty_diterima' => $qty, // Default to full receipt
+                        'harga_satuan' => $harga,
+                        'diskon' => $diskon, 
+                        'ppn' => $ppn_rate,
+                        'subtotal' => $subtotal,
+                    ];
+                })->toArray();
+            } else {
+                $this->resetPOFields();
+            }
+        } else {
+            $this->resetPOFields();
+        }
+    }
+    
+    public function updatedDetails($value, $key)
+    {
+        $parts = explode('.', $key);
+        $index = $parts[0];
+        $field = $parts[1];
+
+        if (in_array($field, ['qty_diterima', 'harga_satuan', 'diskon', 'ppn'])) {
+            $qty = (float) ($this->details[$index]['qty_diterima'] ?? 0);
+            $harga = (float) ($this->details[$index]['harga_satuan'] ?? 0);
+            $diskon = (float) ($this->details[$index]['diskon'] ?? 0);
+            $ppn_rate = (float) ($this->details[$index]['ppn'] ?? 0);
+            
+            // Calculate DPP (Dasar Pengenaan Pajak)
+            $dpp = ($qty * $harga) - ($qty * $diskon);
+            
+            // Calculate PPN Amount based on percentage
+            $ppn_amount = $dpp * ($ppn_rate / 100);
+            
+            // Subtotal = DPP + PPN Amount
+            $this->details[$index]['subtotal'] = $dpp + $ppn_amount;
+        }
+    }
+    
+    public function calculateGlobalPPN()
+    {
+        $baseAmount = 0;
+        foreach ($this->details as $detail) {
+            $qty = (float) ($detail['qty_diterima'] ?? 0);
+            $harga = (float) ($detail['harga_satuan'] ?? 0);
+            $diskon = (float) ($detail['diskon'] ?? 0);
+            // Base amount for global tax is usually (Gross - Item Discounts)
+            $baseAmount += ($qty * $harga) - ($qty * $diskon);
+        }
+        
+        $taxable = max(0, $baseAmount - $this->diskon);
+        $this->ppn = round($taxable * ($this->ppn_rate / 100), 2);
+    }
+
+    public function calculateGlobalPPNWithRate($rate)
+    {
+        $this->ppn_rate = $rate;
+        $this->calculateGlobalPPN();
+    }
+
+
+    private function resetPOFields()
+    {
+        $this->details = [];
+        $this->ppn = 0;
+        $this->diskon = 0;
+        $this->biaya_lain = 0;
+    }
+
+    public function getCalculatedTotalProperty()
+    {
+        $subtotal = collect($this->details)->sum('subtotal');
+        return $subtotal - $this->diskon + $this->ppn + $this->biaya_lain;
+    }
+    
+    public function getSubTotalProperty()
+    {
+        return collect($this->details)->sum('subtotal');
+    }
+
     public function show($id)
     {
-        $penerimaans = ModelsPenerimaan::with('pembelian', 'gudang')->findOrFail($id);
+        $this->loadPenerimaan($id, true);
+    }
 
-        $this->penerimaan_id = $penerimaans->id;
-        $this->no_penerimaan = $penerimaans->no_penerimaan;
-        $this->tanggal_terima = $penerimaans->tanggal_terima ? $penerimaans->tanggal_terima->format('Y-m-d') : null;
-        $this->pembelian_id = $penerimaans->pembelian_id;
-        $this->gudang_id = $penerimaans->gudang_id;
-        $this->diterima_oleh = $penerimaans->diterima_oleh;
+    public function edit($id)
+    {
+        $this->loadPenerimaan($id, false);
+    }
+    
+    private function loadPenerimaan($id, $readonly)
+    {
+        $penerimaan = ModelsPenerimaan::with(['pembelian.details', 'gudang', 'details.barang'])->findOrFail($id);
 
-        // Mapping details ke format yang dipakai form
-        $this->details = $penerimaans->details->map(function ($detail) {
+        $this->penerimaan_id = $penerimaan->id;
+        $this->no_penerimaan = $penerimaan->no_penerimaan;
+        $this->tanggal_terima = $penerimaan->tanggal_terima ? $penerimaan->tanggal_terima->format('Y-m-d') : null;
+        $this->pembelian_id = $penerimaan->pembelian_id;
+        $this->gudang_id = $penerimaan->gudang_id;
+        $this->diterima_oleh = $penerimaan->diterima_oleh;
+        
+        // Load financials from Penerimaan record (not PO)
+        $this->ppn = $penerimaan->ppn;
+        $this->diskon = $penerimaan->diskon;
+        $this->biaya_lain = $penerimaan->biaya_lain;
+
+        $this->details = $penerimaan->details->map(function ($detail) use ($penerimaan) {
+            $qty_po = 0;
+            if ($penerimaan->pembelian) {
+                $poDetail = $penerimaan->pembelian->details->where('barang_id', $detail->barang_id)->first();
+                $qty_po = $poDetail ? $poDetail->qty : 0;
+            }
+
             return [
                 'barang_id' => $detail->barang_id,
+                'nama_barang' => $detail->barang->nama_barang ?? 'Unknown',
+                'qty_po' => $qty_po,
                 'qty_diterima' => $detail->qty_diterima,
-                // 'harga_satuan' => $detail->harga_satuan,
-                // 'subtotal' => $detail->qty * $detail->harga_satuan,
+                'harga_satuan' => $detail->harga_satuan,
+                'diskon' => $detail->diskon,
+                'ppn' => $detail->ppn,
+                'subtotal' => $detail->subtotal,
             ];
         })->toArray();
 
-        $this->isShow = true;
-        $this->isOpen = true; // supaya form muncul
+        $this->isShow = $readonly;
+        $this->isOpen = true;
     }
 
     public function create()
@@ -108,32 +271,20 @@ class Penerimaan extends Component
     public function closeModal()
     {
         $this->isOpen = false;
+        $this->resetInputFields();
+        $this->isShow = false;
     }
 
     private function resetInputFields()
     {
         $this->penerimaan_id = null;
         $this->no_penerimaan = '';
-        $this->tanggal_terima = '';
+        $this->tanggal_terima = date('Y-m-d');
         $this->pembelian_id = '';
         $this->gudang_id = '';
         $this->diterima_oleh = '';
+        $this->resetPOFields();
     }
-
-    public function edit($id)
-    {
-        $penerimaan = ModelsPenerimaan::findOrFail($id);
-
-        $this->penerimaan_id = $penerimaan->id;
-        $this->no_penerimaan = $penerimaan->no_penerimaan;
-        $this->tanggal_terima = $penerimaan->tanggal_terima;
-        $this->pembelian_id = $penerimaan->pembelian_id;
-        $this->gudang_id = $penerimaan->gudang_id;
-        $this->diterima_oleh = $penerimaan->diterima_oleh;
-
-        $this->openModal();
-    }
-
 
     public function store()
     {
@@ -154,66 +305,99 @@ class Penerimaan extends Component
                     'pembelian_id' => $this->pembelian_id,
                     'gudang_id' => $this->gudang_id,
                     'diterima_oleh' => $this->diterima_oleh,
+                    'ppn' => $this->ppn,
+                    'diskon' => $this->diskon,
+                    'biaya_lain' => $this->biaya_lain,
                     'updated_user' => $userId,
                 ]
             );
 
-            // Jika create baru, tambahkan inserted_user
             if (!$this->penerimaan_id) {
                 $penerimaan->inserted_user = $userId;
-                $penerimaan->save(); // Jangan lupa simpan perubahan inserted_user
+                $penerimaan->save();
             }
 
-            // Proses detail dan update stok
-            $pembelian = Pembelian::with('details')->find($this->pembelian_id);
-            if ($pembelian) {
-                foreach ($pembelian->details as $detail) {
-                    $penerimaan->details()->create([
-                        'barang_id' => $detail->barang_id,
-                        'qty_diterima' => $detail->qty,
-                    ]);
+            $penerimaan->details()->delete();
 
+            $pembelian = Pembelian::find($this->pembelian_id);
+            
+            foreach ($this->details as $detail) {
+                $qty_rec = (float) $detail['qty_diterima'];
+                $harga = (float) ($detail['harga_satuan'] ?? 0);
+                $diskon = (float) ($detail['diskon'] ?? 0);
+                $ppn_rate = (float) ($detail['ppn'] ?? 0);
+                
+                // Calculate DPP
+                $dpp = ($qty_rec * $harga) - ($qty_rec * $diskon);
+                // Calculate PPN Amount
+                $ppn_amount = $dpp * ($ppn_rate / 100);
+                // Subtotal
+                $subtotal = $dpp + $ppn_amount;
+
+                $penerimaan->details()->create([
+                    'barang_id' => $detail['barang_id'],
+                    'qty_diterima' => $qty_rec,
+                    'harga_satuan' => $harga,
+                    'diskon' => $diskon,
+                    'ppn' => $ppn_rate, // Store the rate
+                    'subtotal' => $subtotal,
+                ]);
+            }
+            
+            // Total Value for Journal is now explicitly calculated from the saved values
+            $total_value = $this->getCalculatedTotalProperty();
+
+            if (!$this->penerimaan_id) {
+                foreach ($this->details as $detail) {
                     $stok = Stok::firstOrNew([
-                        'barang_id' => $detail->barang_id,
+                        'barang_id' => $detail['barang_id'],
                         'gudang_id' => $this->gudang_id,
                     ]);
-
-                    $stok->stok_akhir = ($stok->stok_akhir ?? 0) + $detail->qty;
+                    $stok->stok_akhir = ($stok->stok_akhir ?? 0) + $detail['qty_diterima'];
                     $stok->save();
+
+                    // Log to Kartu Stok
+                    \App\Models\KartuStok::create([
+                        'tanggal' => $this->tanggal_terima,
+                        'barang_id' => $detail['barang_id'],
+                        'gudang_id' => $this->gudang_id,
+                        'jenis_transaksi' => 'masuk',
+                        'qty_masuk' => $detail['qty_diterima'],
+                        'qty_keluar' => 0,
+                        'stok_akhir' => $stok->stok_akhir,
+                        'referensi_id' => $penerimaan->id,
+                        'referensi_tipe' => 'Penerimaan',
+                        'keterangan' => 'Penerimaan No ' . $this->no_penerimaan,
+                        'inserted_user' => $userId,
+                    ]);
+                }
+                
+                if ($pembelian) {
+                    $pembelian->status = 'received';
+                    $pembelian->save();
                 }
 
-                $pembelian->status = 'received';
-                $pembelian->save();
-
-                // Tambah Jurnal Otomatis
                 $jurnal = Jurnal::create([
-                    'no_jurnal' => 'JU-' . str_pad($penerimaan->id, 5, '0', STR_PAD_LEFT),
+                    'no_jurnal' => 'PB-' . str_pad($penerimaan->id, 5, '0', STR_PAD_LEFT),
                     'tanggal' => $this->tanggal_terima,
-                    'keterangan' => 'Penerimaan Barang dari Pembelian No ' . $pembelian->no_pembelian,
+                    'keterangan' => 'Penerimaan Barang dari Pembelian No ' . ($pembelian->no_po ?? '-'),
                     'referensi_id' => $penerimaan->id,
                     'referensi_tipe' => 'Penerimaan',
                     'inserted_user' => $userId,
                 ]);
 
-                // Jumlah total pembelian dari detail (bisa pakai subtotal atau qty * harga)
-                $total = $pembelian->details->sum(function ($detail) {
-                    return $detail->qty * $detail->harga_satuan; // pastikan `harga_satuan` tersedia
-                });
-
-                // Jurnal Detail: Debet ke Persediaan
                 $jurnal->details()->create([
                     'akun_id' => 4,
                     'nama_akun' => 'Persediaan Barang',
-                    'debit' => $total,
+                    'debit' => $total_value,
                     'kredit' => 0,
                 ]);
 
-                // Jurnal Detail: Kredit ke Hutang Usaha
                 $jurnal->details()->create([
                     'akun_id' => 5,
                     'nama_akun' => 'Hutang Usaha',
                     'debit' => 0,
-                    'kredit' => $total,
+                    'kredit' => $total_value,
                 ]);
             }
         });
@@ -226,9 +410,6 @@ class Penerimaan extends Component
         $this->closeModal();
         $this->resetInputFields();
     }
-
-
-
 
     public function delete($id)
     {

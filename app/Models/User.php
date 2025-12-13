@@ -23,7 +23,8 @@ class User extends Authenticatable
         'password',
         'phonenumber',
         'provider_id',
-        'avatar'
+        'avatar',
+        'mode' // light or dark theme
     ];
 
     /**

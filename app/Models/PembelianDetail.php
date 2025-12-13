@@ -20,6 +20,8 @@ class PembelianDetail extends Model
         'barang_id',
         'qty',
         'harga_satuan',
+        'diskon',
+        'ppn',
         'subtotal',
         'inserted_user',
         'updated_user',

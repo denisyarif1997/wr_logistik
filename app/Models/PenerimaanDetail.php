@@ -17,6 +17,10 @@ class PenerimaanDetail extends Model
         'penerimaan_id',
         'barang_id',
         'qty_diterima',
+        'harga_satuan',
+        'diskon',
+        'ppn',
+        'subtotal',
     ];
 
     public function penerimaan()

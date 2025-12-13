@@ -37,6 +37,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         Route::get('/pembelian', function () {
             return view('admin.pembelian.index');
         })->name('pembelian.index');
+        Route::get('/pembelian/{id}/print', [App\Http\Controllers\PembelianController::class, 'print'])->name('pembelian.print');
         Route::get('/gudang', function () {
             return view('admin.gudang.index');
         })->name('gudang.index');

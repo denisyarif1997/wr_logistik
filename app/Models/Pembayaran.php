@@ -10,13 +10,14 @@ class Pembayaran extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'pembayaran_penerimaan';
+    protected $table = 'pembayaran';
 
     protected $fillable = [
         'penerimaan_id',
         'tanggal_bayar',
         'jumlah_bayar',
         'metode_bayar',
+        'akun_id',
         'keterangan',
         'status',
         'inserted_user',
@@ -31,6 +32,11 @@ class Pembayaran extends Model
     public function penerimaan()
     {
         return $this->belongsTo(Penerimaan::class, 'penerimaan_id');
+    }
+
+    public function akun()
+    {
+        return $this->belongsTo(Akun::class, 'akun_id');
     }
     public function creator()
     {

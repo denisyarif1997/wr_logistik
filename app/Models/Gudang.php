@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Gudang extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     public $timestamps = false;
 
@@ -39,4 +39,9 @@ class Gudang extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
-} 
+
+    public function stok()
+    {
+        return $this->hasMany(Stok::class);
+    }
+}

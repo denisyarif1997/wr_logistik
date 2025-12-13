@@ -1,9 +1,9 @@
 <div>
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Pembelian</h3>
+            <h3 class="card-title">Purchase Order</h3>
             <div class="card-tools">
-                <button wire:click="create()" class="btn btn-sm btn-info">New Pembelian</button>
+                <button wire:click="create()" class="btn btn-sm btn-info">New Purchase Order</button>
             </div>
         </div>
         <div class="card-body">
@@ -29,7 +29,7 @@
                 <thead>
                     <tr>
                         <th>Id</th>
-                        <th>No Pembelian</th>
+                        <th>No PO</th>
                         <th>Tanggal PO</th>
                         <th>Supplier</th>
                         <th>Status</th>
@@ -67,6 +67,7 @@
                                     <button wire:click="delete({{ $pembelian->id }})" class="btn btn-sm btn-danger"
                                         onclick="return confirm('Are you sure?');">Delete</button>
                                 @endif
+                                <a href="{{ route('admin.pembelian.print', $pembelian->id) }}" target="_blank" class="btn btn-sm btn-warning">Print</a>
                             </td>
 
                             <td>
@@ -80,7 +81,7 @@
                                     @endif
                                 @else
                                     <button wire:click="show({{ $pembelian->id }})"
-                                        class="btn btn-sm btn-secondary">Show</button>
+                                        class="btn btn-sm btn-secondary">Received</button>
                                 @endif
                             </td>
 

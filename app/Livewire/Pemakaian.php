@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\{Barang, Departemen, Gudang, Pemakaian as ModelsPemakaian, PemakaianDetail, Stok};
+use App\Models\{Barang, Departemen, Gudang, Pemakaian as ModelsPemakaian, PemakaianDetail, Stok, Jurnal, JurnalDetail};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -35,6 +35,11 @@ class Pemakaian extends Component
 
     public function render()
     {
+        // Ensure allBarang is loaded if gudang_id is set
+        if ($this->gudang_id && $this->allBarang->isEmpty()) {
+            $this->loadBarangWithStock();
+        }
+
         $pemakaians = ModelsPemakaian::with(['departemen', 'gudang', 'details.barang'])
             ->where('no_pemakaian', 'like', "%{$this->search}%")
             ->latest()->paginate(10);
@@ -122,7 +127,24 @@ class Pemakaian extends Component
                 $old = ModelsPemakaian::with('details')->find($this->pemakaian_id);
                 foreach ($old->details as $d) {
                     $stok = Stok::where('barang_id', $d->barang_id)->where('gudang_id', $old->gudang_id)->first();
-                    if ($stok) { $stok->stok_akhir += $d->qty; $stok->save(); }
+                    if ($stok) { 
+                        $stok->stok_akhir += $d->qty; 
+                        $stok->save(); 
+
+                        \App\Models\KartuStok::create([
+                            'tanggal' => date('Y-m-d'),
+                            'barang_id' => $d->barang_id,
+                            'gudang_id' => $old->gudang_id,
+                            'jenis_transaksi' => 'masuk',
+                            'qty_masuk' => $d->qty,
+                            'qty_keluar' => 0,
+                            'stok_akhir' => $stok->stok_akhir,
+                            'referensi_id' => $old->id,
+                            'referensi_tipe' => 'Pemakaian',
+                            'keterangan' => 'Koreksi Pemakaian (Edit) ' . $old->no_pemakaian,
+                            'inserted_user' => auth()->id(),
+                        ]);
+                    }
                 }
             }
 
@@ -141,10 +163,59 @@ class Pemakaian extends Component
 
             $pemakaian->details()->delete();
 
+            $total_nilai_pemakaian = 0;
             foreach ($details as $d) {
                 $pemakaian->details()->create($d);
                 $stok = Stok::where('barang_id', $d['barang_id'])->where('gudang_id', $this->gudang_id)->first();
-                if ($stok) { $stok->stok_akhir -= $d['qty']; $stok->save(); }
+                if ($stok) { 
+                    $stok->stok_akhir -= $d['qty']; 
+                    $stok->save(); 
+
+                    \App\Models\KartuStok::create([
+                        'tanggal' => $this->tanggal_pakai,
+                        'barang_id' => $d['barang_id'],
+                        'gudang_id' => $this->gudang_id,
+                        'jenis_transaksi' => 'keluar',
+                        'qty_masuk' => 0,
+                        'qty_keluar' => $d['qty'],
+                        'stok_akhir' => $stok->stok_akhir,
+                        'referensi_id' => $pemakaian->id,
+                        'referensi_tipe' => 'Pemakaian',
+                        'keterangan' => 'Pemakaian No ' . $this->no_pemakaian,
+                        'inserted_user' => auth()->id(),
+                    ]);
+                }
+                // Calculate total value for Jurnal
+                $barang = Barang::find($d['barang_id']);
+                if ($barang && $barang->harga_beli_terakhir) {
+                    $total_nilai_pemakaian += $barang->harga_beli_terakhir * $d['qty'];
+                }
+            }
+
+            // Create Jurnal entry for Pemakaian (only for new records)
+            if (!$this->pemakaian_id && $total_nilai_pemakaian > 0) {
+                $jurnal = Jurnal::create([
+                    'no_jurnal' => 'PM-' . str_pad($pemakaian->id, 5, '0', STR_PAD_LEFT),
+                    'tanggal' => $this->tanggal_pakai,
+                    'keterangan' => 'Pemakaian Barang No ' . $this->no_pemakaian,
+                    'referensi_id' => $pemakaian->id,
+                    'referensi_tipe' => 'Pemakaian',
+                    'inserted_user' => auth()->id(),
+                ]);
+
+                // Debit: Beban Pemakaian
+                $jurnal->details()->create([
+                    'akun_id' => 6, // Beban Pemakaian
+                    'debit' => $total_nilai_pemakaian,
+                    'kredit' => 0,
+                ]);
+
+                // Credit: Persediaan Barang
+                $jurnal->details()->create([
+                    'akun_id' => 4, // Persediaan Barang
+                    'debit' => 0,
+                    'kredit' => $total_nilai_pemakaian,
+                ]);
             }
         });
 
@@ -159,7 +230,24 @@ class Pemakaian extends Component
             $pemakaian = ModelsPemakaian::with('details')->findOrFail($id);
             foreach ($pemakaian->details as $d) {
                 $stok = Stok::where('barang_id', $d->barang_id)->where('gudang_id', $pemakaian->gudang_id)->first();
-                if ($stok) { $stok->stok_akhir += $d->qty; $stok->save(); }
+                if ($stok) { 
+                    $stok->stok_akhir += $d->qty; 
+                    $stok->save(); 
+
+                    \App\Models\KartuStok::create([
+                        'tanggal' => date('Y-m-d'),
+                        'barang_id' => $d->barang_id,
+                        'gudang_id' => $pemakaian->gudang_id,
+                        'jenis_transaksi' => 'masuk',
+                        'qty_masuk' => $d->qty,
+                        'qty_keluar' => 0,
+                        'stok_akhir' => $stok->stok_akhir,
+                        'referensi_id' => $pemakaian->id,
+                        'referensi_tipe' => 'Pemakaian',
+                        'keterangan' => 'Batal Pemakaian ' . $pemakaian->no_pemakaian,
+                        'inserted_user' => auth()->id(),
+                    ]);
+                }
             }
             $pemakaian->details()->delete();
             $pemakaian->delete();

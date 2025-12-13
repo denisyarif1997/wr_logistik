@@ -25,7 +25,8 @@
 
     <!-- Optimized Modern Style -->
     <style>
-        :root {
+        /* Light Mode (Default) */
+        :root, [data-theme="light"] {
             --primary: #0066ff;
             --primary-dark: #0052cc;
             --primary-light: #e6f0ff;
@@ -44,12 +45,33 @@
             --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
         }
 
+        /* Dark Mode */
+        [data-theme="dark"] {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --primary-light: #1e3a8a;
+            --secondary: #f97316;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-light: #0f172a;
+            --bg-card: #1e293b;
+            --text-dark: #f1f5f9;
+            --text-light: #94a3b8;
+            --sidebar-bg: #0f172a;
+            --border-color: #334155;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.5);
+        }
+
         /* Remove universal transition for better performance */
         body {
             font-family: 'Inter', sans-serif;
             background: var(--bg-light);
             color: var(--text-dark);
             font-size: 14px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* Simplified background - no animation */
@@ -65,6 +87,10 @@
             z-index: 0;
         }
 
+        [data-theme="dark"] body::before {
+            background: radial-gradient(circle at 20% 50%, rgba(59,130,246,0.05) 0%, transparent 50%);
+        }
+
         .wrapper { position: relative; z-index: 1; }
 
         /* ===== SIDEBAR - Simplified ===== */
@@ -72,6 +98,11 @@
             background: linear-gradient(180deg, var(--sidebar-bg) 0%, #0f172a 100%);
             border-right: none;
             box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] .main-sidebar {
+            background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+            box-shadow: 2px 0 8px rgba(0,0,0,0.5);
         }
 
         .main-sidebar .brand-link {
@@ -238,10 +269,15 @@
             font-weight: 600;
         }
 
+        [data-theme="dark"] .card-header {
+            background: linear-gradient(135deg, var(--primary-light) 0%, rgba(59,130,246,0.1) 100%);
+        }
+
         .card-title {
             font-weight: 600;
             font-size: 1.1rem;
             margin: 0;
+            color: var(--text-dark);
         }
 
         .card-body { padding: 1.5rem; }
@@ -306,10 +342,15 @@
             background: var(--primary-light);
         }
 
+        [data-theme="dark"] .table tbody tr:hover {
+            background: rgba(59,130,246,0.1);
+        }
+
         .table tbody td {
             padding: 1rem;
             vertical-align: middle;
             border-color: var(--border-color);
+            color: var(--text-dark);
         }
 
         /* ===== BADGES ===== */
@@ -406,12 +447,40 @@
             backface-visibility: hidden;
             transform: translateZ(0);
         }
+
+        /* Form Controls Dark Mode */
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .form-select {
+            background-color: #334155;
+            border-color: #475569;
+            color: #f1f5f9;
+        }
+
+        [data-theme="dark"] .form-control:focus,
+        [data-theme="dark"] .form-select:focus {
+            background-color: #334155;
+            border-color: var(--primary);
+            color: #f1f5f9;
+        }
+
+        [data-theme="dark"] .modal-content {
+            background-color: var(--bg-card);
+            color: var(--text-dark);
+        }
+
+        [data-theme="dark"] .modal-header {
+            border-bottom-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .modal-footer {
+            border-top-color: var(--border-color);
+        }
     </style>
 
     @yield('css')
 </head>
 
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition sidebar-mini layout-fixed" data-theme="{{ Auth::user()->mode ?? 'light' }}">
     <div class="wrapper">
         <x-navbar />
 

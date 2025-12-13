@@ -47,12 +47,9 @@
                             <option value="draft">Draft</option>
                             @if($pembelian_id)
                                 <option value="approved">Approved</option>
-                                {{-- <option value="received">Received</option> --}}
                                 <option value="canceled">Canceled</option>
-                                {{-- <option value="revisi">Revisi</option> --}}
                             @endif
                         </select>
-                        
                         @error('status') <span class="text-danger">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -68,6 +65,8 @@
                         <th>Barang</th>
                         <th>Qty</th>
                         <th>Harga Satuan</th>
+                        <th>Diskon (@)</th>
+                        <th>PPN (%)</th>
                         <th>Subtotal</th>
                         @if(!$isShow)
                             <th>Action</th>
@@ -95,7 +94,15 @@
                             @error('details.'.$index.'.harga_satuan') <span class="text-danger">{{ $message }}</span>@enderror
                         </td>
                         <td>
-                            <input type="text" readonly class="form-control" value="{{ $detail['subtotal'] }}">
+                            <input type="number" wire:model.lazy="details.{{$index}}.diskon" class="form-control" min="0" @if($isShow) readonly @endif>
+                            @error('details.'.$index.'.diskon') <span class="text-danger">{{ $message }}</span>@enderror
+                        </td>
+                        <td>
+                            <input type="number" wire:model.lazy="details.{{$index}}.ppn" class="form-control" min="0" @if($isShow) readonly @endif>
+                            @error('details.'.$index.'.ppn') <span class="text-danger">{{ $message }}</span>@enderror
+                        </td>
+                        <td>
+                            <input type="text" readonly class="form-control" value="Rp {{ number_format($detail['subtotal'], 0, ',', '.') }}">
                         </td>
                         @if(!$isShow)
                             <td>
@@ -105,6 +112,67 @@
                     </tr>
                     @endforeach
                 </tbody>
+                {{-- Tambahkan footer untuk total --}}
+                <tfoot>
+                    <tr>
+                        <td colspan="5" class="text-right"><strong>Subtotal (Termasuk PPN Item):</strong></td>
+                        <td colspan="{{ $isShow ? '1' : '2' }}">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Rp</span>
+                                </div>
+                                <input type="text" class="form-control text-right" 
+                                       value="{{ number_format($this->subTotal, 0, ',', '.') }}" readonly>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="text-right"><strong>Diskon (Global):</strong></td>
+                        <td colspan="{{ $isShow ? '1' : '2' }}">
+                            <input type="number" wire:model.lazy="diskon" class="form-control text-right" min="0" @if($isShow) readonly @endif>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="text-right"><strong>PPN (Global):</strong></td>
+                        <td colspan="{{ $isShow ? '1' : '2' }}">
+                            <div class="input-group">
+                                <input type="number" wire:model.lazy="ppn" class="form-control text-right" min="0" @if($isShow) readonly @endif>
+                                @if(!$isShow)
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            Hitung PPN
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-right">
+                                            <a class="dropdown-item" href="#" wire:click.prevent="calculateGlobalPPNWithRate(10)">10%</a>
+                                            <a class="dropdown-item" href="#" wire:click.prevent="calculateGlobalPPNWithRate(11)">11%</a>
+                                            <a class="dropdown-item" href="#" wire:click.prevent="calculateGlobalPPNWithRate(12)">12%</a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item" href="#" wire:click.prevent="calculateGlobalPPNWithRate(0)">Reset (0%)</a>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="text-right"><strong>Biaya Lain-lain:</strong></td>
+                        <td colspan="{{ $isShow ? '1' : '2' }}">
+                            <input type="number" wire:model.lazy="biaya_lain" class="form-control text-right" min="0" @if($isShow) readonly @endif>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="text-right"><strong>Grand Total:</strong></td>
+                        <td colspan="{{ $isShow ? '1' : '2' }}">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">Rp</span>
+                                </div>
+                                <input type="text" class="form-control font-weight-bold text-success text-right" 
+                                       value="{{ number_format($this->total, 0, ',', '.') }}" readonly>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
 
             @if(!$isShow)

@@ -19,6 +19,8 @@ class Jurnal extends Model
         'keterangan',
         'referensi_id',
         'referensi_tipe',
+        'inserted_user',
+        'updated_user',
     ];
 
     public function details()

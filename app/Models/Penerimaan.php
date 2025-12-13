@@ -19,6 +19,9 @@ class Penerimaan extends Model
         'pembelian_id',
         'gudang_id',
         'diterima_oleh',
+        'ppn',
+        'diskon',
+        'biaya_lain',
         'inserted_user',
         'updated_user',
         'created_at',
@@ -45,6 +48,12 @@ class Penerimaan extends Model
     {
         return $this->hasMany(PenerimaanDetail::class);
     }
+
+    public function pembayaran()
+    {
+        return $this->hasMany(Pembayaran::class);
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'inserted_user');
@@ -58,5 +67,17 @@ class Penerimaan extends Model
     public function deleter()
     {
         return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    public function getCalculatedTotalAttribute()
+    {
+        $subtotal = $this->details->sum('subtotal');
+        return $subtotal - $this->diskon + $this->ppn + $this->biaya_lain;
+    }
+
+    public function getSisaHutangAttribute()
+    {
+        $paid = $this->pembayaran->where('status', '!=', 'gagal')->sum('jumlah_bayar');
+        return max(0, $this->calculated_total - $paid);
     }
 }
