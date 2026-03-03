@@ -30,9 +30,9 @@
                         <th>Nama Gudang</th>
                         <th>Lokasi</th>
                         <th>Created By</th>
-                        <th>Created At</th>
+                        <!-- <th>Created At</th> -->
                         <th>Updated By</th>
-                        <th>Updated At</th>
+                        <!-- <th>Updated At</th> -->
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -42,9 +42,9 @@
                             <td>{{ $gudang->nama_gudang }}</td>
                             <td>{{ $gudang->lokasi }}</td>
                             <td>{{ $gudang->creator->name ?? '-' }}</td>
-                            <td>{{ $gudang->created_at }}</td>
+                            <!-- <td>{{ $gudang->created_at }}</td> -->
                             <td>{{ $gudang->updater->name ?? '-' }}</td>
-                            <td>{{ $gudang->updated_at }}</td>
+                            <!-- <td>{{ $gudang->updated_at }}</td> -->
                             <td>
                                 <button wire:click="edit({{ $gudang->id }})" class="btn btn-sm btn-primary">Edit</button>
                                 <button wire:click="delete({{ $gudang->id }})" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>

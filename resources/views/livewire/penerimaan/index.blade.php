@@ -14,13 +14,22 @@
                 <hr>
             @endif
 
-           <div class="row mb-3">
-                <div class="col-md-6">
-                    <div class="input-group">
+            <div class="row align-items-end mb-3">
+                <div class="col-md-3">
+                    <label class="mb-1"><i class="far fa-calendar-alt mr-1"></i> Start Date</label>
+                    <input wire:model="startDate" type="date" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                    <label class="mb-1"><i class="far fa-calendar-check mr-1"></i> End Date</label>
+                    <input wire:model="endDate" type="date" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-4">
+                    <label class="mb-1"><i class="fas fa-search mr-1"></i> Search</label>
+                    <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fas fa-search"></i></span>
                         </div>
-                        <input wire:model.defer="search" wire:keydown.enter="$refresh" type="text" class="form-control" placeholder="Cari No Penerimaan, No PO, atau Supplier...">
+                        <input wire:model.defer="search" wire:keydown.enter="$refresh" type="text" class="form-control" placeholder="Cari No Penerimaan, PO, atau Supplier...">
                         <div class="input-group-append">
                             <button wire:click="$refresh" class="btn btn-primary" type="button">
                                 Cari

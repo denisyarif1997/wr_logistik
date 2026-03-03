@@ -24,8 +24,9 @@ class Penerimaan extends Component
     public $penerimaan_id;
     public $isOpen = false;
     public $search = '';
+    public $startDate, $endDate;
     public $isShow = false;
-    public $showPenerimaan;
+    public $poSearch = ''; // Search for PO
     public $details = [];
 
     // Financial details (Editable, initialized from PO)
@@ -58,32 +59,55 @@ class Penerimaan extends Component
 
     public function render()
     {
-        $penerimaans = ModelsPenerimaan::with(['pembelian', 'gudang'])
-            ->where('no_penerimaan', 'like', '%' . $this->search . '%')
+        $penerimaans = ModelsPenerimaan::with(['pembelian.supplier', 'gudang'])
+            ->where(function ($query) {
+                $query->where('no_penerimaan', 'like', '%' . $this->search . '%')
+                    ->orWhereHas('pembelian.supplier', function ($q) {
+                        $q->where('nama_supplier', 'like', '%' . $this->search . '%');
+                    });
+            })
+            ->whereBetween('tanggal_terima', [$this->startDate, $this->endDate])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        $query = Pembelian::query();
-
-        $query->where(function ($q) {
-            $q->where('status', 'approved')
-                ->whereDoesntHave('penerimaan');
-        });
-
-        if ($this->pembelian_id) {
-            $query->orWhere('id', $this->pembelian_id);
+        // Optimized PO fetching
+        $pembelians = [];
+        if (strlen($this->poSearch) >= 2) {
+            $pembelians = Pembelian::where('status', 'approved')
+                ->whereDoesntHave('penerimaan')
+                ->where(function($q) {
+                    $q->where('no_po', 'like', '%' . $this->poSearch . '%')
+                      ->orWhereHas('supplier', function($sq) {
+                          $sq->where('nama_supplier', 'like', '%' . $this->poSearch . '%');
+                      });
+                })
+                ->limit(10)->get();
+            
+            // If already selected, hide dropdown
+            if (count($pembelians) == 1 && $pembelians[0]->id == $this->pembelian_id && $pembelians[0]->no_po == $this->poSearch) {
+                $pembelians = [];
+            }
+        } elseif ($this->pembelian_id) {
+            $pembelians = Pembelian::where('id', $this->pembelian_id)->get();
         }
 
-        $pembelians = $query->get();
-
         $gudangs = Gudang::all();
-
 
         return view('livewire.penerimaan.index', compact('penerimaans', 'pembelians', 'gudangs'));
     }
 
+    public function selectPO($id, $no_po)
+    {
+        $this->pembelian_id = $id;
+        $this->poSearch = $no_po;
+        $this->updatedPembelianId($id);
+    }
+
     public function mount()
     {
+        $this->startDate = now()->subMonth()->format('Y-m-d');
+        $this->endDate = now()->format('Y-m-d');
+
         // Check if there's a penerimaan to show from session
         if (session()->has('showPenerimaanId')) {
             $penerimaanId = session()->pull('showPenerimaanId');
@@ -220,12 +244,13 @@ class Penerimaan extends Component
     
     private function loadPenerimaan($id, $readonly)
     {
-        $penerimaan = ModelsPenerimaan::with(['pembelian.details', 'gudang', 'details.barang'])->findOrFail($id);
+        $penerimaan = ModelsPenerimaan::with(['pembelian.supplier', 'pembelian.details', 'gudang', 'details.barang'])->findOrFail($id);
 
         $this->penerimaan_id = $penerimaan->id;
         $this->no_penerimaan = $penerimaan->no_penerimaan;
         $this->tanggal_terima = $penerimaan->tanggal_terima ? $penerimaan->tanggal_terima->format('Y-m-d') : null;
         $this->pembelian_id = $penerimaan->pembelian_id;
+        $this->poSearch = $penerimaan->pembelian->no_po ?? '';
         $this->gudang_id = $penerimaan->gudang_id;
         $this->diterima_oleh = $penerimaan->diterima_oleh;
         
@@ -273,6 +298,7 @@ class Penerimaan extends Component
         $this->isOpen = false;
         $this->resetInputFields();
         $this->isShow = false;
+        $this->poSearch = '';
     }
 
     private function resetInputFields()

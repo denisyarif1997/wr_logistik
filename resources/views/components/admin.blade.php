@@ -487,7 +487,7 @@
         <aside class="main-sidebar elevation-4">
             <a href="{{ route('admin.dashboard') }}" class="brand-link">
                 <i class="fas fa-shipping-fast mr-2"></i>
-                <span class="brand-text">LogisticsPro</span>
+                <span class="brand-text">MyLogistics</span>
             </a>
 
             <div class="sidebar">

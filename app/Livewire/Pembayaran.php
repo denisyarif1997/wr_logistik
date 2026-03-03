@@ -29,12 +29,19 @@ class Pembayaran extends Component
     public $isOpen = false;
     public $isShow = false;
     public $search = '';
+    public $startDate, $endDate;
     
     // Payment detail modal
     public $showPaymentDetailModal = false;
     public $selectedPenerimaanForDetail;
 
     protected $paginationTheme = 'bootstrap';
+
+    public function mount()
+    {
+        $this->startDate = now()->subMonth()->format('Y-m-d');
+        $this->endDate = now()->format('Y-m-d');
+    }
 
     protected $rules = [
         'penerimaan_id' => 'required|exists:penerimaan,id',
@@ -70,14 +77,27 @@ class Pembayaran extends Component
     public function render()
     {
         $pembayarans = ModelsPembayaran::with(['penerimaan.pembelian.supplier', 'akun', 'creator', 'updater'])
-            ->whereHas('penerimaan', function ($query) {
-                $query->where('no_penerimaan', 'like', '%' . $this->search . '%');
+            ->where(function ($query) {
+                $query->whereHas('penerimaan', function ($q) {
+                    $q->where('no_penerimaan', 'like', '%' . $this->search . '%')
+                        ->orWhereHas('pembelian.supplier', function ($sq) {
+                            $sq->where('nama_supplier', 'like', '%' . $this->search . '%');
+                        });
+                });
             })
+            ->whereBetween('tanggal_bayar', [$this->startDate, $this->endDate])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        // Get all penerimaan (not just unpaid ones)
+        // Get all penerimaan (not just unpaid ones) within date range
         $penerimaansBelumLunas = Penerimaan::with(['pembelian.supplier', 'details', 'pembayaran'])
+            ->where(function ($query) {
+                $query->where('no_penerimaan', 'like', '%' . $this->search . '%')
+                    ->orWhereHas('pembelian.supplier', function ($q) {
+                        $q->where('nama_supplier', 'like', '%' . $this->search . '%');
+                    });
+            })
+            ->whereBetween('tanggal_terima', [$this->startDate, $this->endDate])
             ->orderBy('created_at', 'desc')
             ->get();
         

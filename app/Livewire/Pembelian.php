@@ -25,12 +25,13 @@ class Pembelian extends Component
     public $isOpen = false;
     public $search = '';
     public $supplierSearch = '';
+    public $startDate, $endDate;
 
     public $isShow = false;
     public $showPembelian;
 
     public $details = [];
-    public $allBarang = [];
+    public $barangSearch = []; // Track search per row
 
     protected $rules = [
         'no_po' => 'required|unique:pembelian,no_po',
@@ -49,13 +50,15 @@ class Pembelian extends Component
 
     public function mount()
     {
-        $this->allBarang = Barang::all();
         $this->addDetail();
+        $this->startDate = now()->subMonth()->format('Y-m-d');
+        $this->endDate = now()->format('Y-m-d');
     }
 
     public function addDetail()
     {
         $this->details[] = ['barang_id' => '', 'qty' => 1, 'harga_satuan' => 0, 'diskon' => 0, 'ppn' => 0, 'subtotal' => 0];
+        $this->barangSearch[count($this->details) - 1] = '';
     }
 
     public function removeDetail($index)
@@ -122,16 +125,70 @@ class Pembelian extends Component
         $this->calculateGlobalPPN();
     }
 
+    public function selectSupplier($id, $name)
+    {
+        $this->supplier_id = $id;
+        $this->supplierSearch = $name;
+    }
+
+    public function selectBarang($index, $id, $name)
+    {
+        $this->details[$index]['barang_id'] = $id;
+        $this->barangSearch[$index] = $name;
+        
+        // Auto-fill price if needed
+        $barang = Barang::find($id);
+        if ($barang) {
+            $this->details[$index]['harga_satuan'] = $barang->harga_beli_terakhir ?? $barang->harga_jual ?? 0;
+            // Trigger calculation
+            $this->updatedDetails(null, $index . '.harga_satuan');
+        }
+    }
+
     public function render()
     {
         $pembelians = ModelsPembelian::with(['supplier', 'creator', 'updater', 'deleter'])
-        ->where('no_po', 'like', '%' . $this->search . '%')
+            ->where(function ($query) {
+                $query->where('no_po', 'like', '%' . $this->search . '%')
+                    ->orWhereHas('supplier', function ($q) {
+                        $q->where('nama_supplier', 'like', '%' . $this->search . '%');
+                    });
+            })
+            ->whereBetween('tanggal_po', [$this->startDate, $this->endDate])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        $suppliers = Suppliers::all();
+        // Optimized fetching for Supplier
+        $suppliers = [];
+        if (strlen($this->supplierSearch) >= 2) {
+            $suppliers = Suppliers::where('nama_supplier', 'like', '%' . $this->supplierSearch . '%')
+                ->limit(10)->get();
+            
+            // If the search exactly matches an existing selection, don't show dropdown
+            if ($suppliers->count() == 1 && $suppliers->first()->id == $this->supplier_id && $suppliers->first()->nama_supplier == $this->supplierSearch) {
+                $suppliers = [];
+            }
+        }
 
-        return view('livewire.pembelian.index', compact('pembelians', 'suppliers'));
+        // Optimized fetching for Barang
+        $barangResults = [];
+        foreach ($this->barangSearch as $index => $term) {
+            if (strlen($term) >= 2) {
+                $results = Barang::where('nama_barang', 'like', '%' . $term . '%')
+                    ->limit(10)->get();
+                
+                // If the search exactly matches an existing selection, don't show dropdown
+                if ($results->count() == 1 && isset($this->details[$index]['barang_id']) && $results->first()->id == $this->details[$index]['barang_id'] && $results->first()->nama_barang == $term) {
+                    $barangResults[$index] = [];
+                } else {
+                    $barangResults[$index] = $results;
+                }
+            } else {
+                $barangResults[$index] = [];
+            }
+        }
+
+        return view('livewire.pembelian.index', compact('pembelians', 'suppliers', 'barangResults'));
     }
 
     public function getTotalProperty()
@@ -194,18 +251,22 @@ class Pembelian extends Component
 
     public function edit($id)
     {
-        $pembelian = ModelsPembelian::with('details')->findOrFail($id);
+        $pembelian = ModelsPembelian::with('details.barang', 'supplier')->findOrFail($id);
         
         $this->pembelian_id = $pembelian->id;
         $this->no_po = $pembelian->no_po;
         $this->tanggal_po = $pembelian->tanggal_po;
         $this->supplier_id = $pembelian->supplier_id;
+        $this->supplierSearch = $pembelian->supplier->nama_supplier ?? '';
         $this->status = $pembelian->status;
         $this->ppn = $pembelian->ppn;
         $this->diskon = $pembelian->diskon;
         $this->biaya_lain = $pembelian->biaya_lain;
         
-        $this->details = $pembelian->details->map(function ($detail) {
+        $this->details = [];
+        $this->barangSearch = [];
+
+        foreach ($pembelian->details as $index => $detail) {
             $qty = $detail->qty;
             $harga = $detail->harga_satuan;
             $diskon = $detail->diskon;
@@ -215,7 +276,7 @@ class Pembelian extends Component
             $ppn_amount = $dpp * ($ppn_rate / 100);
             $subtotal = $dpp + $ppn_amount;
 
-            return [
+            $this->details[$index] = [
                 'id' => $detail->id,
                 'barang_id' => $detail->barang_id,
                 'qty' => $qty,
@@ -224,7 +285,8 @@ class Pembelian extends Component
                 'ppn' => $ppn_rate,
                 'subtotal' => $subtotal,
             ];
-        })->toArray();
+            $this->barangSearch[$index] = $detail->barang->nama_barang ?? '';
+        }
         
         // Calculate reverse PPN Rate
         $subtotal = collect($this->details)->sum('subtotal');
@@ -237,6 +299,7 @@ class Pembelian extends Component
         
         $this->openModal();
     }
+
     public function store()
     {
         $this->validate(
@@ -244,8 +307,6 @@ class Pembelian extends Component
                 ? array_merge($this->rules, ['no_po' => 'required|unique:pembelian,no_po,' . $this->pembelian_id])
                 : $this->rules
         );
-    
-        // $userId = Auth::id();
     
         DB::transaction(function () {
             $userId = Auth::id();
@@ -258,10 +319,9 @@ class Pembelian extends Component
                 'ppn' => $this->ppn,
                 'diskon' => $this->diskon,
                 'biaya_lain' => $this->biaya_lain,
-                'updated_user' => $userId, // selalu diisi saat update
+                'updated_user' => $userId, 
             ];
         
-            // Hanya isi inserted_user jika create
             if (!$this->pembelian_id) {
                 $data['inserted_user'] = $userId;
             }
@@ -273,7 +333,7 @@ class Pembelian extends Component
         
             $pembelian->details()->delete();
         
-            foreach ($this->details as $detail) {
+            foreach ($this->details as $index => $detail) {
                 $qty = $detail['qty'];
                 $harga = $detail['harga_satuan'];
                 $diskon = $detail['diskon'] ?? 0;
@@ -294,7 +354,6 @@ class Pembelian extends Component
             }
         });
         
-    
         $message = $this->pembelian_id
             ? 'Pembelian updated successfully.'
             : 'Pembelian created successfully.';
@@ -304,36 +363,39 @@ class Pembelian extends Component
         $this->closeModal();
         $this->resetInputFields();
     }
-    
-    
+
     public function show($id)
-{
-    $pembelian = ModelsPembelian::with('supplier', 'details')->findOrFail($id);
+    {
+        $pembelian = ModelsPembelian::with('supplier', 'details.barang')->findOrFail($id);
 
-    $this->pembelian_id = $pembelian->id;
-    $this->no_po = $pembelian->no_po;
-    $this->tanggal_po = $pembelian->tanggal_po ? $pembelian->tanggal_po->format('Y-m-d') : null;
-    $this->supplier_id = $pembelian->supplier_id;
-    $this->status = $pembelian->status;
-    $this->ppn = $pembelian->ppn;
-    $this->diskon = $pembelian->diskon;
-    $this->biaya_lain = $pembelian->biaya_lain;
+        $this->pembelian_id = $pembelian->id;
+        $this->no_po = $pembelian->no_po;
+        $this->tanggal_po = $pembelian->tanggal_po ? $pembelian->tanggal_po->format('Y-m-d') : null;
+        $this->supplier_id = $pembelian->supplier_id;
+        $this->supplierSearch = $pembelian->supplier->nama_supplier ?? '';
+        $this->status = $pembelian->status;
+        $this->ppn = $pembelian->ppn;
+        $this->diskon = $pembelian->diskon;
+        $this->biaya_lain = $pembelian->biaya_lain;
 
-    // Mapping details ke format yang dipakai form
-    $this->details = $pembelian->details->map(function ($detail) {
-        return [
-            'barang_id' => $detail->barang_id,
-            'qty' => $detail->qty,
-            'harga_satuan' => $detail->harga_satuan,
-            'diskon' => $detail->diskon,
-            'ppn' => $detail->ppn,
-            'subtotal' => ($detail->qty * $detail->harga_satuan) - ($detail->qty * $detail->diskon) + ($detail->qty * $detail->ppn),
-        ];
-    })->toArray();
+        $this->details = [];
+        $this->barangSearch = [];
 
-    $this->isShow = true;
-    $this->isOpen = true; // supaya form muncul
-}
+        foreach ($pembelian->details as $index => $detail) {
+            $this->details[$index] = [
+                'barang_id' => $detail->barang_id,
+                'qty' => $detail->qty,
+                'harga_satuan' => $detail->harga_satuan,
+                'diskon' => $detail->diskon,
+                'ppn' => $detail->ppn,
+                'subtotal' => ($detail->qty * $detail->harga_satuan) - ($detail->qty * $detail->diskon) + ($detail->qty * $detail->ppn),
+            ];
+            $this->barangSearch[$index] = $detail->barang->nama_barang ?? '';
+        }
+
+        $this->isShow = true;
+        $this->isOpen = true;
+    }
 
     
 public function generateNoPO()

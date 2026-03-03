@@ -15,16 +15,30 @@
         <form wire:submit.prevent="store">
             <div class="row">
                 <div class="col-md-6">
-                    <div class="form-group">
+                    <div class="form-group position-relative">
                         <label for="pembelian_id">No. Pembelian</label>
-                        <select class="form-control" id="pembelian_id" wire:model.live="pembelian_id" @if($isShow || $penerimaan_id) disabled @endif>
-                            <option value="">Select Pembelian</option>
-                            @foreach($pembelians as $pembelian)
-                                <option value="{{ $pembelian->id }}">
-                                    {{ $pembelian->no_po }} - {{ $pembelian->supplier->nama_supplier }} ({{ $pembelian->created_at->format('d/m/Y') }})
-                                </option>
-                            @endforeach
-                        </select>
+                        @if($isShow || $penerimaan_id)
+                            <input type="text" class="form-control" value="{{ $poSearch }}" readonly>
+                        @else
+                            <input type="text" class="form-control" placeholder="Cari No. PO atau Supplier..." 
+                                   wire:model.live="poSearch" autocomplete="off">
+                            <input type="hidden" wire:model="pembelian_id">
+                            
+                            @if(!empty($poSearch) && !empty($pembelians) && $pembelian_id == null)
+                                <div class="list-group position-absolute w-100 shadow" style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                                    @foreach($pembelians as $pembelian)
+                                        <button type="button" class="list-group-item list-group-item-action py-2 d-flex justify-content-between align-items-center"
+                                                wire:click="selectPO({{ $pembelian->id }}, '{{ $pembelian->no_po }}')">
+                                            <div>
+                                                <strong>{{ $pembelian->no_po }}</strong><br>
+                                                <small class="text-muted">{{ $pembelian->supplier->nama_supplier }}</small>
+                                            </div>
+                                            <small class="text-muted">{{ $pembelian->created_at->format('d/m/Y') }}</small>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
+                        @endif
                         @error('pembelian_id') <span class="text-danger">{{ $message }}</span>@enderror
                     </div>
                 </div>

@@ -21,9 +21,12 @@ class Jurnal extends Component
     public $details = [];
     public $isOpen = false;
     public $search = '';
+    public $startDate, $endDate;
 
     public function mount()
     {
+        $this->startDate = now()->subMonth()->format('Y-m-d');
+        $this->endDate = now()->format('Y-m-d');
         $this->tanggal = date('Y-m-d');
         $this->details = [
             ['akun_id' => '', 'debit' => 0, 'kredit' => 0]
@@ -33,8 +36,11 @@ class Jurnal extends Component
     public function render()
     {
         $jurnals = ModelsJurnal::with(['details.akun'])
-            ->where('no_jurnal', 'like', '%' . $this->search . '%')
-            ->orWhere('keterangan', 'like', '%' . $this->search . '%')
+            ->where(function ($query) {
+                $query->where('no_jurnal', 'like', '%' . $this->search . '%')
+                    ->orWhere('keterangan', 'like', '%' . $this->search . '%');
+            })
+            ->whereBetween('tanggal', [$this->startDate, $this->endDate])
             ->orderBy('id', 'desc')
             ->paginate(10);
 

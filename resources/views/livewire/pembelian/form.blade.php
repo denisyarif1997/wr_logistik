@@ -29,14 +29,26 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="form-group">
+                    <div class="form-group position-relative">
                         <label for="supplier_id">Supplier</label>
-                        <select class="form-control" id="supplier_id" wire:model.lazy="supplier_id" @if($isShow) disabled @endif>
-                            <option value="">Select Supplier</option>
-                            @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}">{{ $supplier->nama_supplier }}</option>
-                            @endforeach
-                        </select>
+                        @if($isShow)
+                            <input type="text" class="form-control" value="{{ $supplierSearch }}" readonly>
+                        @else
+                            <input type="text" class="form-control" placeholder="Cari Supplier..." 
+                                   wire:model.live="supplierSearch" autocomplete="off">
+                            <input type="hidden" wire:model="supplier_id">
+                            
+                            @if(!empty($supplierSearch) && !empty($suppliers) && $supplier_id == null)
+                                <div class="list-group position-absolute w-100 shadow" style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                                    @foreach($suppliers as $supplier)
+                                        <button type="button" class="list-group-item list-group-item-action py-2"
+                                                wire:click="selectSupplier({{ $supplier->id }}, '{{ $supplier->nama_supplier }}')">
+                                            {{ $supplier->nama_supplier }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
+                        @endif
                         @error('supplier_id') <span class="text-danger">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -76,14 +88,28 @@
                 <tbody>
                     @foreach($details as $index => $detail)
                     <tr>
-                        <td>
-                            <select wire:model.lazy="details.{{$index}}.barang_id" class="form-control" @if($isShow) disabled @endif>
-                                <option value="">Pilih Barang</option>
-                                @foreach($allBarang as $barang)
-                                    <option value="{{ $barang->id }}">{{ $barang->nama_barang }}</option>
-                                @endforeach
-                            </select>
-                            @error('details.'.$index.'.barang_id') <span class="text-danger">{{ $message }}</span>@enderror
+                        <td style="width: 300px;">
+                            <div class="position-relative">
+                                @if($isShow)
+                                    <input type="text" class="form-control shadow-none border-0 bg-transparent" value="{{ $barangSearch[$index] ?? '' }}" readonly>
+                                @else
+                                    <input type="text" class="form-control" placeholder="Cari Barang..." 
+                                           wire:model.live="barangSearch.{{ $index }}" autocomplete="off">
+                                    <input type="hidden" wire:model="details.{{ $index }}.barang_id">
+                                    
+                                    @if(!empty($barangSearch[$index]) && isset($barangResults[$index]) && !empty($barangResults[$index]) && empty($details[$index]['barang_id']))
+                                        <div class="list-group position-absolute w-100 shadow" style="z-index: 1000; max-height: 150px; overflow-y: auto;">
+                                            @foreach($barangResults[$index] as $barang)
+                                                <button type="button" class="list-group-item list-group-item-action py-1 px-2 small"
+                                                        wire:click="selectBarang({{ $index }}, {{ $barang->id }}, '{{ $barang->nama_barang }}')">
+                                                    {{ $barang->nama_barang }}
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                @endif
+                                @error('details.'.$index.'.barang_id') <span class="text-danger small">{{ $message }}</span>@enderror
+                            </div>
                         </td>
                         <td>
                             <input type="number" wire:model.lazy="details.{{$index}}.qty" class="form-control" min="1" @if($isShow) readonly @endif>

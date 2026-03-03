@@ -15,7 +15,9 @@ class Pemakaian extends Component
 
     public $pemakaian_id, $no_pemakaian, $tanggal_pakai, $departemen_id, $gudang_id, $diajukan_oleh;
     public $search = '', $isOpen = false, $viewing = null;
-    public $details = [], $allBarang = [];
+    public $startDate, $endDate;
+    public $details = [];
+    public $barangSearch = []; // Track search per row
 
     protected $rules = [
         'no_pemakaian' => 'required|unique:pemakaian,no_pemakaian',
@@ -29,60 +31,94 @@ class Pemakaian extends Component
 
     public function mount()
     {
+        $this->startDate = now()->subMonth()->format('Y-m-d');
+        $this->endDate = now()->format('Y-m-d');
         $this->tanggal_pakai = date('Y-m-d');
         $this->resetForm();
     }
 
     public function render()
     {
-        // Ensure allBarang is loaded if gudang_id is set
-        if ($this->gudang_id && $this->allBarang->isEmpty()) {
-            $this->loadBarangWithStock();
-        }
-
         $pemakaians = ModelsPemakaian::with(['departemen', 'gudang', 'details.barang'])
             ->where('no_pemakaian', 'like', "%{$this->search}%")
+            ->whereBetween('tanggal_pakai', [$this->startDate, $this->endDate])
             ->latest()->paginate(10);
+
+        // Optimized Barang fetching per row
+        $barangResults = [];
+        if ($this->gudang_id) {
+            foreach ($this->barangSearch as $index => $term) {
+                if (strlen($term) >= 2) {
+                    $results = Barang::whereHas('stok', function ($q) {
+                        $q->where('gudang_id', $this->gudang_id)->where('stok_akhir', '>', 0);
+                    })
+                    ->with(['stok' => fn($q) => $q->where('gudang_id', $this->gudang_id)])
+                    ->where('nama_barang', 'like', '%' . $term . '%')
+                    ->limit(10)->get();
+
+                    // If exact match with current selection, hide dropdown
+                    if ($results->count() == 1 && isset($this->details[$index]['barang_id']) && $results->first()->id == $this->details[$index]['barang_id'] && $results->first()->nama_barang == $term) {
+                        $barangResults[$index] = [];
+                    } else {
+                        $barangResults[$index] = $results;
+                    }
+                } else {
+                    $barangResults[$index] = [];
+                }
+            }
+        }
 
         return view('livewire.pemakaian.index', [
             'pemakaians' => $pemakaians,
             'departemens' => Departemen::all(),
             'gudangs' => Gudang::all(),
+            'barangResults' => $barangResults,
         ]);
+    }
+
+    public function selectBarang($index, $id, $name)
+    {
+        $this->details[$index]['barang_id'] = $id;
+        $this->barangSearch[$index] = $name;
     }
 
     public function updatingSearch() { $this->resetPage(); }
 
     public function updatedGudangId()
     {
-        $this->loadBarangWithStock();
-        $this->details = [['barang_id' => '', 'qty' => 1]];
+        $this->reset(['details', 'barangSearch']);
+        $this->addDetail();
     }
 
-    public function loadBarangWithStock()
-    {
-        if (!$this->gudang_id) {
-            $this->allBarang = collect();
-            return;
-        }
-
-        $this->allBarang = Barang::whereHas('stok', function ($q) {
-            $q->where('gudang_id', $this->gudang_id)->where('stok_akhir', '>', 0);
-        })->with(['stok' => fn($q) => $q->where('gudang_id', $this->gudang_id)])
-          ->get();
+    public function addDetail() 
+    { 
+        $this->details[] = ['barang_id' => '', 'qty' => 1]; 
+        $this->barangSearch[count($this->details) - 1] = '';
     }
 
-    public function addDetail() { $this->details[] = ['barang_id' => '', 'qty' => 1]; }
-    public function removeDetail($index) { unset($this->details[$index]); $this->details = array_values($this->details); }
+    public function removeDetail($index) 
+    { 
+        unset($this->details[$index]); 
+        unset($this->barangSearch[$index]);
+        $this->details = array_values($this->details); 
+        $this->barangSearch = array_values($this->barangSearch);
+    }
 
     public function create() { $this->resetForm(); $this->openModal(); }
+
     public function edit($id)
     {
-        $p = ModelsPemakaian::with('details')->findOrFail($id);
+        $p = ModelsPemakaian::with('details.barang')->findOrFail($id);
         $this->fill($p->only('id', 'no_pemakaian', 'tanggal_pakai', 'departemen_id', 'gudang_id', 'diajukan_oleh'));
         $this->pemakaian_id = $p->id;
-        $this->details = $p->details->map(fn($d) => ['barang_id' => $d->barang_id, 'qty' => $d->qty])->toArray();
-        $this->loadBarangWithStock();
+        
+        $this->details = [];
+        $this->barangSearch = [];
+        foreach ($p->details as $index => $d) {
+            $this->details[$index] = ['barang_id' => $d->barang_id, 'qty' => $d->qty];
+            $this->barangSearch[$index] = $d->barang->nama_barang ?? '';
+        }
+
         $this->openModal();
     }
 
@@ -94,7 +130,7 @@ class Pemakaian extends Component
 
     private function resetForm()
     {
-        $this->reset(['pemakaian_id', 'no_pemakaian', 'departemen_id', 'gudang_id', 'diajukan_oleh', 'details']);
+        $this->reset(['pemakaian_id', 'no_pemakaian', 'departemen_id', 'gudang_id', 'diajukan_oleh', 'details', 'barangSearch']);
         $this->tanggal_pakai = date('Y-m-d');
         $this->addDetail();
     }

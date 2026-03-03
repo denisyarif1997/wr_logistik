@@ -68,20 +68,25 @@
                 <tbody>
                     @foreach($details as $index => $detail)
                     <tr>
-                        <td>
-                            <select wire:model.lazy="details.{{$index}}.barang_id" class="form-control">
-                                <option value="">Pilih Barang</option>
-                                @foreach($allBarang as $barang)
-                                    @php
-                                            $stokGudang = $barang->stok->sum('stok_akhir');
-                                    @endphp
-                                    <option value="{{ $barang->id }}">
-                                        {{ $barang->nama_barang }} (Stok: {{ $stokGudang }})
-                                    </option>
-                                @endforeach
-                            </select>
-                                                    
-                             @error('details.'.$index.'.barang_id') <span class="text-danger">{{ $message }}</span>@enderror
+                        <td style="width: 300px;">
+                            <div class="position-relative">
+                                <input type="text" class="form-control" placeholder="Cari Barang..." 
+                                       wire:model.live="barangSearch.{{ $index }}" autocomplete="off">
+                                <input type="hidden" wire:model="details.{{ $index }}.barang_id">
+                                
+                                @if(!empty($barangSearch[$index]) && isset($barangResults[$index]) && !empty($barangResults[$index]) && empty($details[$index]['barang_id']))
+                                    <div class="list-group position-absolute w-100 shadow" style="z-index: 1000; max-height: 150px; overflow-y: auto;">
+                                        @foreach($barangResults[$index] as $barang)
+                                            <button type="button" class="list-group-item list-group-item-action py-1 px-2 small d-flex justify-content-between align-items-center"
+                                                    wire:click="selectBarang({{ $index }}, {{ $barang->id }}, '{{ $barang->nama_barang }}')">
+                                                <span>{{ $barang->nama_barang }}</span>
+                                                <small class="text-muted">Stok: {{ $barang->stok->sum('stok_akhir') }}</small>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @error('details.'.$index.'.barang_id') <span class="text-danger small">{{ $message }}</span>@enderror
+                            </div>
                         </td>
                         <td>
                             <input type="number" wire:model.lazy="details.{{$index}}.qty" class="form-control" min="1">
