@@ -6,6 +6,7 @@ use App\Models\Barang;
 use App\Models\Pembelian as ModelsPembelian;
 use App\Models\PembelianDetail;
 use App\Models\Suppliers;
+use App\Models\Ppn;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -21,6 +22,7 @@ class Pembelian extends Component
     public $no_po, $tanggal_po, $supplier_id, $status;
     public $ppn = 0, $diskon = 0, $biaya_lain = 0; // Added fields
     public $ppn_rate = 0; // PPN rate for calculation
+    public $ppn_master_id = null; // Selected PPN master ID
     public $pembelian_id;
     public $isOpen = false;
     public $search = '';
@@ -42,7 +44,8 @@ class Pembelian extends Component
         'details.*.qty' => 'required|numeric|min:1',
         'details.*.harga_satuan' => 'required|numeric|min:0',
         'details.*.diskon' => 'nullable|numeric|min:0',
-        'details.*.ppn' => 'nullable|numeric|min:0', // Added rule
+        'details.*.ppn' => 'nullable|numeric|min:0',
+        'ppn_master_id' => 'nullable|exists:ppn,id',
         'ppn' => 'nullable|numeric|min:0',
         'diskon' => 'nullable|numeric|min:0',
         'biaya_lain' => 'nullable|numeric|min:0',
@@ -61,6 +64,20 @@ class Pembelian extends Component
         $this->barangSearch[count($this->details) - 1] = '';
     }
 
+    public function updatedPpnMasterId($value)
+    {
+        if ($value) {
+            $ppnMaster = Ppn::find($value);
+            if ($ppnMaster) {
+                $this->ppn_rate = $ppnMaster->rate;
+                $this->calculateGlobalPPN();
+            }
+        } else {
+            $this->ppn_rate = 0;
+            $this->ppn = 0;
+        }
+    }
+
     public function removeDetail($index)
     {
         unset($this->details[$index]);
@@ -76,11 +93,13 @@ class Pembelian extends Component
         if (in_array($field, ['qty', 'harga_satuan', 'diskon', 'ppn'])) {
             $qty = $this->details[$index]['qty'] ?: 0;
             $harga = $this->details[$index]['harga_satuan'] ?: 0;
-            $diskon = $this->details[$index]['diskon'] ?: 0;
+            $diskon_persen = $this->details[$index]['diskon'] ?: 0;
             $ppn_rate = $this->details[$index]['ppn'] ?: 0;
             
-            // Calculate DPP
-            $dpp = ($qty * $harga) - ($qty * $diskon);
+            // Calculate DPP with percentage discount
+            $total_harga = $qty * $harga;
+            $diskon_amount = $total_harga * ($diskon_persen / 100);
+            $dpp = $total_harga - $diskon_amount;
             // Calculate PPN Amount
             $ppn_amount = $dpp * ($ppn_rate / 100);
             // Subtotal
@@ -102,19 +121,12 @@ class Pembelian extends Component
 
     public function calculateGlobalPPN()
     {
-        // Base amount = Sum of (Qty * Harga - Qty * Diskon)
-        // This is the taxable amount BEFORE Item PPN.
-        // Wait, if items have PPN, does Global PPN apply on top?
-        // Usually:
-        // Option A: Global PPN applies to the Subtotal (which includes Item PPN). -> Tax on Tax.
-        // Option B: Global PPN applies to the Base (DPP).
-        // Given the user wants both, usually it's one or the other, or cumulative.
-        // Let's assume Global PPN applies to the Net Total (Subtotal of items).
-        // If Item PPN exists, Subtotal includes it.
-        // Let's use the Subtotal as the base.
-        
+        // Base amount = Sum of item subtotals (which includes item PPN)
+        // Global discount is applied as percentage
         $subtotal = $this->getSubTotalProperty();
-        $taxable = max(0, $subtotal - $this->diskon);
+        $diskon_persen = $this->diskon ?: 0;
+        $diskon_amount = $subtotal * ($diskon_persen / 100);
+        $taxable = max(0, $subtotal - $diskon_amount);
         
         $this->ppn = round($taxable * ($this->ppn_rate / 100), 2);
     }
@@ -149,9 +161,9 @@ class Pembelian extends Component
     {
         $pembelians = ModelsPembelian::with(['supplier', 'creator', 'updater', 'deleter'])
             ->where(function ($query) {
-                $query->where('no_po', 'like', '%' . $this->search . '%')
+                $query->whereRaw('LOWER(no_po) LIKE ?', ['%' . strtolower($this->search) . '%'])
                     ->orWhereHas('supplier', function ($q) {
-                        $q->where('nama_supplier', 'like', '%' . $this->search . '%');
+                        $q->whereRaw('LOWER(nama_supplier) LIKE ?', ['%' . strtolower($this->search) . '%']);
                     });
             })
             ->whereBetween('tanggal_po', [$this->startDate, $this->endDate])
@@ -161,7 +173,7 @@ class Pembelian extends Component
         // Optimized fetching for Supplier
         $suppliers = [];
         if (strlen($this->supplierSearch) >= 2) {
-            $suppliers = Suppliers::where('nama_supplier', 'like', '%' . $this->supplierSearch . '%')
+            $suppliers = Suppliers::whereRaw('LOWER(nama_supplier) LIKE ?', ['%' . strtolower($this->supplierSearch) . '%'])
                 ->limit(10)->get();
             
             // If the search exactly matches an existing selection, don't show dropdown
@@ -174,7 +186,7 @@ class Pembelian extends Component
         $barangResults = [];
         foreach ($this->barangSearch as $index => $term) {
             if (strlen($term) >= 2) {
-                $results = Barang::where('nama_barang', 'like', '%' . $term . '%')
+                $results = Barang::whereRaw('LOWER(nama_barang) LIKE ?', ['%' . strtolower($term) . '%'])
                     ->limit(10)->get();
                 
                 // If the search exactly matches an existing selection, don't show dropdown
@@ -188,7 +200,10 @@ class Pembelian extends Component
             }
         }
 
-        return view('livewire.pembelian.index', compact('pembelians', 'suppliers', 'barangResults'));
+        // Get active PPN masters for dropdown
+        $ppnMasters = Ppn::active()->orderBy('rate', 'asc')->get();
+
+        return view('livewire.pembelian.index', compact('pembelians', 'suppliers', 'barangResults', 'ppnMasters'));
     }
 
     public function getTotalProperty()
@@ -227,6 +242,7 @@ class Pembelian extends Component
             'isOpen',
             'ppn',
             'ppn_rate',
+            'ppn_master_id',
             'diskon',
             'biaya_lain'
         ]);
@@ -243,6 +259,7 @@ class Pembelian extends Component
         $this->status = 'draft';
         $this->ppn = 0;
         $this->ppn_rate = 0;
+        $this->ppn_master_id = null;
         $this->diskon = 0;
         $this->biaya_lain = 0;
         $this->details = [];
@@ -269,10 +286,13 @@ class Pembelian extends Component
         foreach ($pembelian->details as $index => $detail) {
             $qty = $detail->qty;
             $harga = $detail->harga_satuan;
-            $diskon = $detail->diskon;
+            $diskon_persen = $detail->diskon;
             $ppn_rate = $detail->ppn;
             
-            $dpp = ($qty * $harga) - ($qty * $diskon);
+            // Calculate with percentage discount
+            $total_harga = $qty * $harga;
+            $diskon_amount = $total_harga * ($diskon_persen / 100);
+            $dpp = $total_harga - $diskon_amount;
             $ppn_amount = $dpp * ($ppn_rate / 100);
             $subtotal = $dpp + $ppn_amount;
 
@@ -281,7 +301,7 @@ class Pembelian extends Component
                 'barang_id' => $detail->barang_id,
                 'qty' => $qty,
                 'harga_satuan' => $harga,
-                'diskon' => $diskon,
+                'diskon' => $diskon_persen,
                 'ppn' => $ppn_rate,
                 'subtotal' => $subtotal,
             ];
@@ -290,11 +310,22 @@ class Pembelian extends Component
         
         // Calculate reverse PPN Rate
         $subtotal = collect($this->details)->sum('subtotal');
-        $taxable = max(0, $subtotal - $this->diskon);
+        $diskon_persen = $this->diskon ?: 0;
+        $diskon_amount = $subtotal * ($diskon_persen / 100);
+        $taxable = max(0, $subtotal - $diskon_amount);
         if ($taxable > 0 && $this->ppn > 0) {
             $this->ppn_rate = round(($this->ppn / $taxable) * 100, 2);
         } else {
             $this->ppn_rate = 0;
+        }
+
+        // Try to find matching PPN master
+        $this->ppn_master_id = null;
+        if ($this->ppn_rate > 0) {
+            $ppnMaster = Ppn::whereRaw('ABS(rate - ?) < 0.01', [$this->ppn_rate])->first();
+            if ($ppnMaster) {
+                $this->ppn_master_id = $ppnMaster->id;
+            }
         }
         
         $this->openModal();
@@ -317,6 +348,7 @@ class Pembelian extends Component
                 'supplier_id' => $this->supplier_id,
                 'status' => $this->status,
                 'ppn' => $this->ppn,
+                'ppn_master_id' => $this->ppn_master_id,
                 'diskon' => $this->diskon,
                 'biaya_lain' => $this->biaya_lain,
                 'updated_user' => $userId, 
@@ -336,10 +368,13 @@ class Pembelian extends Component
             foreach ($this->details as $index => $detail) {
                 $qty = $detail['qty'];
                 $harga = $detail['harga_satuan'];
-                $diskon = $detail['diskon'] ?? 0;
+                $diskon_persen = $detail['diskon'] ?? 0;
                 $ppn_rate = $detail['ppn'] ?? 0;
                 
-                $dpp = ($qty * $harga) - ($qty * $diskon);
+                // Calculate with percentage discount
+                $total_harga = $qty * $harga;
+                $diskon_amount = $total_harga * ($diskon_persen / 100);
+                $dpp = $total_harga - $diskon_amount;
                 $ppn_amount = $dpp * ($ppn_rate / 100);
                 $subtotal = $dpp + $ppn_amount;
 
@@ -347,7 +382,7 @@ class Pembelian extends Component
                     'barang_id' => $detail['barang_id'],
                     'qty' => $qty,
                     'harga_satuan' => $harga,
-                    'diskon' => $diskon,
+                    'diskon' => $diskon_persen,
                     'ppn' => $ppn_rate,
                     'subtotal' => $subtotal,
                 ]);
@@ -358,7 +393,7 @@ class Pembelian extends Component
             ? 'Pembelian updated successfully.'
             : 'Pembelian created successfully.';
     
-        $this->dispatch('notify', $message);
+        $this->dispatch('notify', message: $message, type: 'success');
     
         $this->closeModal();
         $this->resetInputFields();
@@ -382,15 +417,41 @@ class Pembelian extends Component
         $this->barangSearch = [];
 
         foreach ($pembelian->details as $index => $detail) {
+            $qty = $detail->qty;
+            $harga = $detail->harga_satuan;
+            $diskon_persen = $detail->diskon;
+            $ppn_rate = $detail->ppn;
+            
+            // Calculate with percentage discount
+            $total_harga = $qty * $harga;
+            $diskon_amount = $total_harga * ($diskon_persen / 100);
+            $dpp = $total_harga - $diskon_amount;
+            $ppn_amount = $dpp * ($ppn_rate / 100);
+            $subtotal = $dpp + $ppn_amount;
+
             $this->details[$index] = [
                 'barang_id' => $detail->barang_id,
-                'qty' => $detail->qty,
-                'harga_satuan' => $detail->harga_satuan,
-                'diskon' => $detail->diskon,
-                'ppn' => $detail->ppn,
-                'subtotal' => ($detail->qty * $detail->harga_satuan) - ($detail->qty * $detail->diskon) + ($detail->qty * $detail->ppn),
+                'qty' => $qty,
+                'harga_satuan' => $harga,
+                'diskon' => $diskon_persen,
+                'ppn' => $ppn_rate,
+                'subtotal' => $subtotal,
             ];
             $this->barangSearch[$index] = $detail->barang->nama_barang ?? '';
+        }
+
+        // Try to find matching PPN master for display
+        $this->ppn_master_id = null;
+        $subtotal = collect($this->details)->sum('subtotal');
+        $diskon_persen = $this->diskon ?: 0;
+        $diskon_amount = $subtotal * ($diskon_persen / 100);
+        $taxable = max(0, $subtotal - $diskon_amount);
+        if ($taxable > 0 && $this->ppn > 0) {
+            $ppnRate = round(($this->ppn / $taxable) * 100, 2);
+            $ppnMaster = Ppn::whereRaw('ABS(rate - ?) < 0.01', [$ppnRate])->first();
+            if ($ppnMaster) {
+                $this->ppn_master_id = $ppnMaster->id;
+            }
         }
 
         $this->isShow = true;
@@ -429,7 +490,7 @@ public function generateNoPO()
             $pembelian->delete();
         });
         
-        $this->dispatch('notify', 'Pembelian deleted successfully.');
+        $this->dispatch('notify', message: 'Pembelian deleted successfully.', type: 'success');
     }
 
     public function updatingSearch()
@@ -446,9 +507,9 @@ public function validatePembelian($id)
         $pembelian->status = 'approved';
         $pembelian->save();
 
-        session()->flash('message', 'Pembelian berhasil di-approve.');
+        $this->dispatch('notify', message: 'Pembelian berhasil di-approve.', type: 'success');
     } else {
-        session()->flash('message', 'Validasi gagal. Status pembelian tidak sesuai.');
+        $this->dispatch('notify', message: 'Validasi gagal. Status pembelian tidak sesuai.', type: 'error');
     }
 }
 
@@ -460,9 +521,9 @@ public function unvalidasi($id)
         $pembelian->status = 'draft';
         $pembelian->save();
 
-        session()->flash('message', 'Approval berhasil dibatalkan.');
+        $this->dispatch('notify', message: 'Approval berhasil dibatalkan.', type: 'success');
     } else {
-        session()->flash('message', 'Unapprove gagal. Status pembelian tidak sesuai.');
+        $this->dispatch('notify', message: 'Unapprove gagal. Status pembelian tidak sesuai.', type: 'error');
     }
 }
 

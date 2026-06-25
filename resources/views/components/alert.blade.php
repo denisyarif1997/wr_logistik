@@ -1,20 +1,20 @@
 @if (session()->has('success'))
     <script>
-        toastr.success("{{ session()->get('success') }}")
+        showNotification("{{ session()->get('success') }}", 'success');
     </script>
 @endif
 @if (session()->has('warning'))
     <script>
-        toastr.warning("{{ session()->get('warning') }}")
+        showNotification("{{ session()->get('warning') }}", 'warning');
     </script>
 @endif
 @if (session()->has('info'))
     <script>
-        toastr.info("{{ session()->get('info') }}")
+        showNotification("{{ session()->get('info') }}", 'info');
     </script>
 @endif
 @if (session()->has('error'))
     <script>
-        toastr.error("{{ session()->get('error') }}")
+        showNotification("{{ session()->get('error') }}", 'error');
     </script>
 @endif

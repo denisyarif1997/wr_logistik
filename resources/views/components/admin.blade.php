@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="{{ asset('admin/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/dist/css/toastr.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4@5/bundle.css">
 
     <!-- Optimized Modern Style -->
     <style>
@@ -70,7 +71,7 @@
             font-family: 'Inter', sans-serif;
             background: var(--bg-light);
             color: var(--text-dark);
-            font-size: 14px;
+            font-size: 11px;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
@@ -108,9 +109,9 @@
         .main-sidebar .brand-link {
             background: rgba(255,255,255,0.05);
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding: 1.2rem 1rem;
+            padding: 0.8rem 0.8rem;
             font-weight: 700;
-            font-size: 1.3rem;
+            font-size: 1rem;
             color: #fff !important;
             transition: background 0.2s;
         }
@@ -127,9 +128,9 @@
         /* User Panel */
         .user-panel {
             background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            margin: 1rem;
-            padding: 1rem !important;
+            border-radius: 8px;
+            margin: 0.6rem;
+            padding: 0.6rem !important;
             border: 1px solid rgba(255,255,255,0.1);
         }
 
@@ -154,17 +155,17 @@
 
         .nav-sidebar > .nav-item > .nav-link {
             color: rgba(255,255,255,0.8);
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            padding: 0.5rem 0.7rem;
             font-weight: 500;
             transition: all 0.2s;
             will-change: transform, background-color;
         }
 
         .nav-sidebar > .nav-item > .nav-link i {
-            font-size: 1.1rem;
-            margin-right: 0.75rem;
-            width: 24px;
+            font-size: 0.9rem;
+            margin-right: 0.5rem;
+            width: 20px;
             text-align: center;
         }
 
@@ -181,6 +182,19 @@
             box-shadow: 0 2px 8px rgba(0,102,255,0.3);
         }
 
+        /* Submenu items - scaled down */
+        .nav-treeview > .nav-item > .nav-link {
+            padding: 0.4rem 0.7rem 0.4rem 2.5rem !important;
+            font-size: 0.85rem !important;
+        }
+        .nav-treeview > .nav-item > .nav-link i {
+            font-size: 0.5rem !important;
+        }
+        .nav-header {
+            font-size: 0.65rem !important;
+            padding: 0.4rem 0.7rem !important;
+        }
+
         /* ===== HEADER ===== */
         .main-header {
             background: var(--bg-card);
@@ -192,8 +206,8 @@
         .main-header .navbar-nav .nav-link {
             color: var(--text-dark);
             font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
             transition: all 0.2s;
         }
 
@@ -205,22 +219,22 @@
         /* ===== CONTENT ===== */
         .content-wrapper {
             background: transparent;
-            padding: 1.5rem;
-            min-height: calc(100vh - 3.5rem);
+            padding: 1rem;
+            min-height: calc(100vh - 3rem);
         }
 
         .content-header {
             background: var(--bg-card);
-            border-radius: 16px;
-            padding: 1.5rem 2rem;
-            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--border-color);
         }
 
         .content-header h4 {
             font-weight: 700;
-            font-size: 1.75rem;
+            font-size: 1.3rem;
             color: var(--text-dark);
             margin: 0;
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
@@ -232,7 +246,7 @@
             background: none;
             padding: 0;
             margin: 0;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
         }
 
         .breadcrumb-item { color: var(--text-light); }
@@ -265,7 +279,7 @@
         .card-header {
             background: linear-gradient(135deg, var(--primary-light) 0%, rgba(0,102,255,0.05) 100%);
             border-bottom: 2px solid var(--primary);
-            padding: 1.25rem 1.5rem;
+            padding: 0.8rem 1.2rem;
             font-weight: 600;
         }
 
@@ -275,19 +289,19 @@
 
         .card-title {
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             margin: 0;
             color: var(--text-dark);
         }
 
-        .card-body { padding: 1.5rem; }
+        .card-body { padding: 1rem; }
 
         /* ===== BUTTONS ===== */
         .btn {
-            border-radius: 10px;
-            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            padding: 0.4rem 1rem;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             border: none;
             transition: all 0.2s;
             will-change: transform;
@@ -329,9 +343,9 @@
             color: #fff;
             font-weight: 600;
             text-transform: uppercase;
-            font-size: 0.85rem;
+            font-size: 0.7rem;
             border: none;
-            padding: 1rem;
+            padding: 0.6rem 0.8rem;
         }
 
         .table tbody tr {
@@ -347,7 +361,7 @@
         }
 
         .table tbody td {
-            padding: 1rem;
+            padding: 0.6rem 0.8rem;
             vertical-align: middle;
             border-color: var(--border-color);
             color: var(--text-dark);
@@ -355,10 +369,10 @@
 
         /* ===== BADGES ===== */
         .badge {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.65rem;
         }
 
         /* ===== FOOTER ===== */
@@ -366,10 +380,10 @@
             background: var(--bg-card);
             border-top: 1px solid var(--border-color);
             text-align: center;
-            padding: 1rem;
-            font-size: 0.9rem;
+            padding: 0.6rem;
+            font-size: 0.75rem;
             color: var(--text-light);
-            margin-top: 2rem;
+            margin-top: 1rem;
         }
 
         footer.main-footer a {
@@ -398,12 +412,12 @@
         }
 
         .stats-card .number {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 700;
         }
 
         .stats-card .label {
-            font-size: 0.95rem;
+            font-size: 0.8rem;
             opacity: 0.9;
             font-weight: 500;
         }
@@ -436,10 +450,10 @@
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
-            .content-wrapper { padding: 1rem; }
-            .content-header { padding: 1rem; }
-            .content-header h4 { font-size: 1.5rem; }
-            .card-body { padding: 1rem; }
+            .content-wrapper { padding: 0.6rem; }
+            .content-header { padding: 0.7rem; }
+            .content-header h4 { font-size: 1.1rem; }
+            .card-body { padding: 0.7rem; }
         }
 
         /* Performance optimization: reduce repaints */
@@ -475,12 +489,39 @@
         [data-theme="dark"] .modal-footer {
             border-top-color: var(--border-color);
         }
+
+        /* Old (Jadul) Theme Overrides */
+        .theme-old {
+            font-family: 'Courier New', Courier, monospace !important;
+        }
+        .theme-old .card {
+            border-radius: 0 !important;
+            border: 2px solid var(--text-dark) !important;
+            box-shadow: 4px 4px 0px var(--text-dark) !important;
+        }
+        .theme-old .btn {
+            border-radius: 0 !important;
+            border: 2px solid var(--text-dark) !important;
+            box-shadow: 2px 2px 0px var(--text-dark) !important;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .theme-old .main-header, .theme-old .main-sidebar, .theme-old .main-footer {
+            border: 2px solid var(--text-dark) !important;
+        }
+        .theme-old .nav-sidebar > .nav-item > .nav-link {
+            border-radius: 0 !important;
+        }
+        .theme-old .stats-card {
+            border-radius: 0 !important;
+            border: 2px solid #fff !important;
+        }
     </style>
 
     @yield('css')
 </head>
 
-<body class="hold-transition sidebar-mini layout-fixed" data-theme="{{ Auth::user()->mode ?? 'light' }}">
+<body class="hold-transition sidebar-mini layout-fixed theme-{{ Auth::user()->theme ?? 'default' }}" data-theme="{{ Auth::user()->mode ?? 'light' }}">
     <div class="wrapper">
         <x-navbar />
 
@@ -542,25 +583,98 @@
     <script src="{{ asset('admin/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('admin/plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('admin/plugins/datatables-buttons/js/dataTables.buttons.min.js') }}"></script>
-    <script src="{{ asset('admin/dist/js/toastr.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('admin/dist/js/adminlte.min.js') }}"></script>
 
     <script>
-        // Toastr settings
-        toastr.options = {
-            "progressBar": true,
-            "closeButton": true,
-            "positionClass": "toast-bottom-right",
-            "timeOut": "3000",
-            "showMethod": "fadeIn",
-            "hideMethod": "fadeOut"
-        };
+        // SweetAlert2 notification helper (Toast)
+        function showNotification(message, type = 'success', title = null) {
+            if (!message) return;
+            
+            var titleText = title || (type === 'success' ? 'Berhasil!' : type === 'error' ? 'Gagal!' : type === 'warning' ? 'Peringatan!' : 'Informasi');
+            
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+
+            Toast.fire({
+                icon: type,
+                title: titleText,
+                text: message
+            });
+        }
 
         // Livewire notifications
         document.addEventListener('livewire:init', () => {
             Livewire.on('notify', (data) => {
-                toastr[data.type || 'success'](data.message || data);
+                var message = '';
+                var type = 'success';
+                var title = null;
+                
+                if (data === null || data === undefined) return;
+                
+                // Cek tipe data yang diterima
+                if (typeof data === 'string') {
+                    // Format: dispatch('notify', 'Pesan')
+                    message = data;
+                } else if (Array.isArray(data)) {
+                    // Format dari Livewire v3: dispatch('notify', [...])
+                    if (data.length === 1) {
+                        var item = data[0];
+                        if (typeof item === 'string') {
+                            message = item;
+                        } else if (typeof item === 'object') {
+                            message = item.message || item[0] || '';
+                            type = item.type || 'success';
+                            title = item.title || null;
+                        }
+                    } else if (data.length >= 2) {
+                        // Mungkin format: (message, type)
+                        message = data[0] || '';
+                        type = data[1] || 'success';
+                    }
+                } else if (typeof data === 'object') {
+                    // Format: dispatch('notify', {message: '...', type: '...'})
+                    message = data.message || data.text || '';
+                    type = data.type || 'success';
+                    title = data.title || null;
+                }
+                
+                // Pastikan message adalah string
+                if (typeof message !== 'string') {
+                    try { message = JSON.stringify(message); } catch(e) { message = String(message); }
+                }
+                
+                if (!message) return;
+                showNotification(message, type, title);
             });
+        });
+
+        // Handle session flash messages
+        document.addEventListener('DOMContentLoaded', function() {
+            @if(session('message'))
+                showNotification('{{ session('message') }}', 'success');
+            @endif
+            @if(session('success'))
+                showNotification('{{ session('success') }}', 'success');
+            @endif
+            @if(session('error'))
+                showNotification('{{ session('error') }}', 'error');
+            @endif
+            @if(session('warning'))
+                showNotification('{{ session('warning') }}', 'warning');
+            @endif
+            @if(session('info'))
+                showNotification('{{ session('info') }}', 'info');
+            @endif
         });
 
         // Sidebar active state (optimized)

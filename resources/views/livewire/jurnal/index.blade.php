@@ -13,11 +13,11 @@
                 <div class="row align-items-end mb-3">
                     <div class="col-md-3">
                         <label class="mb-1 small text-muted"><i class="far fa-calendar-alt mr-1"></i> Start Date</label>
-                        <input wire:model.live="startDate" type="date" class="form-control form-control-sm shadow-sm">
+                        <input wire:model="startDate" type="date" class="form-control form-control-sm shadow-sm">
                     </div>
                     <div class="col-md-3">
                         <label class="mb-1 small text-muted"><i class="far fa-calendar-check mr-1"></i> End Date</label>
-                        <input wire:model.live="endDate" type="date" class="form-control form-control-sm shadow-sm">
+                        <input wire:model="endDate" type="date" class="form-control form-control-sm shadow-sm">
                     </div>
                     <div class="col-md-6">
                         <label class="mb-1 small text-muted"><i class="fas fa-search mr-1"></i> Search</label>
@@ -25,7 +25,12 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
                             </div>
-                            <input wire:model.live.debounce.300ms="search" type="text" class="form-control border-left-0" placeholder="Cari No Jurnal atau Keterangan...">
+                            <input wire:model.defer="search" wire:keydown.enter="$refresh" type="text" class="form-control border-left-0" placeholder="Cari No Jurnal atau Keterangan...">
+                            <div class="input-group-append">
+                                <button wire:click="$refresh" class="btn btn-primary" type="button">
+                                    <i class="fas fa-search mr-1"></i> Cari
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

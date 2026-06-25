@@ -4,11 +4,13 @@ namespace App\Livewire;
 
 use App\Models\Gudang;
 use App\Models\Pembelian;
+use App\Models\Barang;
 use App\Models\Penerimaan as ModelsPenerimaan;
 use App\Models\Jurnal;
 use App\Models\Akun;
 use App\Models\JurnalDetail;
 use App\Models\Stok;
+use App\Models\Ppn;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -34,6 +36,7 @@ class Penerimaan extends Component
     public $diskon = 0;
     public $biaya_lain = 0;
     public $ppn_rate = 0; // PPN rate for calculation
+    public $ppn_master_id = null; // Selected PPN master ID
 
 
     public function updatingSearch()
@@ -61,9 +64,9 @@ class Penerimaan extends Component
     {
         $penerimaans = ModelsPenerimaan::with(['pembelian.supplier', 'gudang'])
             ->where(function ($query) {
-                $query->where('no_penerimaan', 'like', '%' . $this->search . '%')
+                $query->whereRaw('LOWER(no_penerimaan) LIKE ?', ['%' . strtolower($this->search) . '%'])
                     ->orWhereHas('pembelian.supplier', function ($q) {
-                        $q->where('nama_supplier', 'like', '%' . $this->search . '%');
+                        $q->whereRaw('LOWER(nama_supplier) LIKE ?', ['%' . strtolower($this->search) . '%']);
                     });
             })
             ->whereBetween('tanggal_terima', [$this->startDate, $this->endDate])
@@ -76,9 +79,9 @@ class Penerimaan extends Component
             $pembelians = Pembelian::where('status', 'approved')
                 ->whereDoesntHave('penerimaan')
                 ->where(function($q) {
-                    $q->where('no_po', 'like', '%' . $this->poSearch . '%')
+                    $q->whereRaw('LOWER(no_po) LIKE ?', ['%' . strtolower($this->poSearch) . '%'])
                       ->orWhereHas('supplier', function($sq) {
-                          $sq->where('nama_supplier', 'like', '%' . $this->poSearch . '%');
+                          $sq->whereRaw('LOWER(nama_supplier) LIKE ?', ['%' . strtolower($this->poSearch) . '%']);
                       });
                 })
                 ->limit(10)->get();
@@ -91,9 +94,13 @@ class Penerimaan extends Component
             $pembelians = Pembelian::where('id', $this->pembelian_id)->get();
         }
 
+        $barangs = Barang::all();
         $gudangs = Gudang::all();
+        
+        // Get active PPN masters for dropdown
+        $ppnMasters = Ppn::active()->orderBy('rate', 'asc')->get();
 
-        return view('livewire.penerimaan.index', compact('penerimaans', 'pembelians', 'gudangs'));
+        return view('livewire.penerimaan.index', compact('penerimaans', 'pembelians', 'gudangs', 'barangs', 'ppnMasters'));
     }
 
     public function selectPO($id, $no_po)
@@ -124,10 +131,13 @@ class Penerimaan extends Component
                 $this->ppn = $pembelian->ppn;
                 $this->diskon = $pembelian->diskon;
                 $this->biaya_lain = $pembelian->biaya_lain;
+                $this->ppn_master_id = $pembelian->ppn_master_id;
                 
                 // Calculate reverse PPN Rate from PO
                 $poSubtotal = $pembelian->details->sum('subtotal');
-                $taxable = max(0, $poSubtotal - $pembelian->diskon);
+                $diskon_persen = $pembelian->diskon ?: 0;
+                $diskon_amount = $poSubtotal * ($diskon_persen / 100);
+                $taxable = max(0, $poSubtotal - $diskon_amount);
                 if ($taxable > 0 && $pembelian->ppn > 0) {
                     $this->ppn_rate = round(($pembelian->ppn / $taxable) * 100, 2);
                 } else {
@@ -137,16 +147,14 @@ class Penerimaan extends Component
                 $this->details = $pembelian->details->map(function ($detail) {
                     $qty = $detail->qty;
                     $harga = $detail->harga_satuan;
-                    $diskon = $detail->diskon ?? 0; // per unit
+                    $diskon_persen = $detail->diskon ?? 0; // percentage
                     $ppn_rate = $detail->ppn ?? 0; // percentage
                     
-                    // Calculate DPP (Dasar Pengenaan Pajak)
-                    $dpp = ($qty * $harga) - ($qty * $diskon);
-                    
-                    // Calculate PPN Amount based on percentage
+                    // Calculate with percentage discount
+                    $total_harga = $qty * $harga;
+                    $diskon_amount = $total_harga * ($diskon_persen / 100);
+                    $dpp = $total_harga - $diskon_amount;
                     $ppn_amount = $dpp * ($ppn_rate / 100);
-                    
-                    // Subtotal = DPP + PPN Amount
                     $subtotal = $dpp + $ppn_amount;
                     
                     return [
@@ -155,7 +163,7 @@ class Penerimaan extends Component
                         'qty_po' => $qty,
                         'qty_diterima' => $qty, // Default to full receipt
                         'harga_satuan' => $harga,
-                        'diskon' => $diskon, 
+                        'diskon' => $diskon_persen, 
                         'ppn' => $ppn_rate,
                         'subtotal' => $subtotal,
                     ];
@@ -174,14 +182,37 @@ class Penerimaan extends Component
         $index = $parts[0];
         $field = $parts[1];
 
+        if ($field === 'barang_id') {
+            $barang = Barang::find($value);
+            if ($barang) {
+                $this->details[$index]['nama_barang'] = $barang->nama_barang;
+                $this->details[$index]['harga_satuan'] = $barang->harga_beli_terakhir ?? 0;
+            } else {
+                $this->details[$index]['nama_barang'] = '';
+                $this->details[$index]['harga_satuan'] = 0;
+            }
+            $qty = (float) ($this->details[$index]['qty_diterima'] ?? 0);
+            $harga = (float) ($this->details[$index]['harga_satuan'] ?? 0);
+            $diskon_persen = (float) ($this->details[$index]['diskon'] ?? 0);
+            $ppn_rate = (float) ($this->details[$index]['ppn'] ?? 0);
+            
+            // Calculate with percentage discount
+            $total_harga = $qty * $harga;
+            $diskon_amount = $total_harga * ($diskon_persen / 100);
+            $dpp = $total_harga - $diskon_amount;
+            $this->details[$index]['subtotal'] = $dpp + ($dpp * ($ppn_rate / 100));
+        }
+
         if (in_array($field, ['qty_diterima', 'harga_satuan', 'diskon', 'ppn'])) {
             $qty = (float) ($this->details[$index]['qty_diterima'] ?? 0);
             $harga = (float) ($this->details[$index]['harga_satuan'] ?? 0);
-            $diskon = (float) ($this->details[$index]['diskon'] ?? 0);
+            $diskon_persen = (float) ($this->details[$index]['diskon'] ?? 0);
             $ppn_rate = (float) ($this->details[$index]['ppn'] ?? 0);
             
-            // Calculate DPP (Dasar Pengenaan Pajak)
-            $dpp = ($qty * $harga) - ($qty * $diskon);
+            // Calculate with percentage discount
+            $total_harga = $qty * $harga;
+            $diskon_amount = $total_harga * ($diskon_persen / 100);
+            $dpp = $total_harga - $diskon_amount;
             
             // Calculate PPN Amount based on percentage
             $ppn_amount = $dpp * ($ppn_rate / 100);
@@ -197,12 +228,16 @@ class Penerimaan extends Component
         foreach ($this->details as $detail) {
             $qty = (float) ($detail['qty_diterima'] ?? 0);
             $harga = (float) ($detail['harga_satuan'] ?? 0);
-            $diskon = (float) ($detail['diskon'] ?? 0);
+            $diskon_persen = (float) ($detail['diskon'] ?? 0);
             // Base amount for global tax is usually (Gross - Item Discounts)
-            $baseAmount += ($qty * $harga) - ($qty * $diskon);
+            $total_harga = $qty * $harga;
+            $diskon_amount = $total_harga * ($diskon_persen / 100);
+            $baseAmount += $total_harga - $diskon_amount;
         }
         
-        $taxable = max(0, $baseAmount - $this->diskon);
+        $diskon_persen = $this->diskon ?: 0;
+        $diskon_amount = $baseAmount * ($diskon_persen / 100);
+        $taxable = max(0, $baseAmount - $diskon_amount);
         $this->ppn = round($taxable * ($this->ppn_rate / 100), 2);
     }
 
@@ -219,6 +254,8 @@ class Penerimaan extends Component
         $this->ppn = 0;
         $this->diskon = 0;
         $this->biaya_lain = 0;
+        $this->ppn_rate = 0;
+        $this->ppn_master_id = null;
     }
 
     public function getCalculatedTotalProperty()
@@ -350,11 +387,13 @@ class Penerimaan extends Component
             foreach ($this->details as $detail) {
                 $qty_rec = (float) $detail['qty_diterima'];
                 $harga = (float) ($detail['harga_satuan'] ?? 0);
-                $diskon = (float) ($detail['diskon'] ?? 0);
+                $diskon_persen = (float) ($detail['diskon'] ?? 0);
                 $ppn_rate = (float) ($detail['ppn'] ?? 0);
                 
-                // Calculate DPP
-                $dpp = ($qty_rec * $harga) - ($qty_rec * $diskon);
+                // Calculate with percentage discount
+                $total_harga = $qty_rec * $harga;
+                $diskon_amount = $total_harga * ($diskon_persen / 100);
+                $dpp = $total_harga - $diskon_amount;
                 // Calculate PPN Amount
                 $ppn_amount = $dpp * ($ppn_rate / 100);
                 // Subtotal
@@ -364,7 +403,7 @@ class Penerimaan extends Component
                     'barang_id' => $detail['barang_id'],
                     'qty_diterima' => $qty_rec,
                     'harga_satuan' => $harga,
-                    'diskon' => $diskon,
+                    'diskon' => $diskon_persen,
                     'ppn' => $ppn_rate, // Store the rate
                     'subtotal' => $subtotal,
                 ]);
@@ -432,7 +471,7 @@ class Penerimaan extends Component
             ? 'Penerimaan updated successfully.'
             : 'Penerimaan created successfully.';
 
-        $this->dispatch('notify', $message);
+        $this->dispatch('notify', message: $message, type: 'success');
         $this->closeModal();
         $this->resetInputFields();
     }
@@ -442,6 +481,6 @@ class Penerimaan extends Component
         $penerimaan = ModelsPenerimaan::findOrFail($id);
         $penerimaan->update(['deleted_by' => Auth::id()]);
         $penerimaan->delete();
-        $this->dispatch('notify', 'Penerimaan deleted successfully.');
+        $this->dispatch('notify', message: 'Penerimaan deleted successfully.', type: 'success');
     }
 }

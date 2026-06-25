@@ -77,7 +77,7 @@ class Departemen extends Component
         );
 
         $message = $this->departemen_id ? 'Departemen updated successfully.' : 'Departemen created successfully.';
-        $this->dispatch('notify', $message);
+        $this->dispatch('notify', message: $message, type: 'success');
         $this->closeModal();
         $this->resetInputFields();
     }
@@ -85,6 +85,6 @@ class Departemen extends Component
     public function delete($id)
     {
         ModelsDepartemen::findOrFail($id)->delete();
-        $this->dispatch('notify', 'Departemen deleted successfully.');
+        $this->dispatch('notify', message: 'Departemen deleted successfully.', type: 'success');
     }
 }

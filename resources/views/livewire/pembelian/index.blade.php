@@ -42,10 +42,10 @@
                         <th>Tanggal PO</th>
                         <th>Supplier</th>
                         <th>Status</th>
-                        <th>Created By</th>
-                        <th>Created At</th>
-                        <th>Updated By</th>
-                        <th>Updated At</th>
+                        <th>Dibuat Oleh</th>
+                        <th>Dibuat Pada</th>
+                        <th>Diperbarui Oleh</th>
+                        <th>Diperbarui Pada</th>
                         <th>Action</th>
                         <th>Validasi Pembelian</th>
                     </tr>
@@ -79,20 +79,39 @@
                                 <a href="{{ route('admin.pembelian.print', $pembelian->id) }}" target="_blank" class="btn btn-sm btn-warning">Print</a>
                             </td>
 
-                            <td>
-                                @if(strtolower($pembelian->status) !== 'received')
-                                    @if(strtolower($pembelian->status) === 'draft')
-                                        <button wire:click="validatePembelian({{ $pembelian->id }})" class="btn btn-sm btn-success"
-                                            onclick="return confirm('Yakin setujui pembelian ini?');">Approve</button>
-                                    @elseif(strtolower($pembelian->status) === 'approved')
-                                        <button wire:click="unvalidasi({{ $pembelian->id }})" class="btn btn-sm btn-danger"
-                                            onclick="return confirm('Yakin batalkan approval?');">Unapprove</button>
-                                    @endif
-                                @else
-                                    <button wire:click="show({{ $pembelian->id }})"
-                                        class="btn btn-sm btn-secondary">Received</button>
-                                @endif
-                            </td>
+                           @php
+    $status = strtolower($pembelian->status ?? '');
+@endphp
+
+<td>
+    @switch($status)
+        @case('draft')
+            <button wire:click="validatePembelian({{ $pembelian->id }})"
+                class="btn btn-success btn-sm">
+                Approve
+            </button>
+            @break
+
+        @case('approved')
+            <button wire:click="unvalidasi({{ $pembelian->id }})"
+                class="btn btn-danger btn-sm">
+                Unapprove
+            </button>
+            @break
+
+        @case('received')
+            <button wire:click="show({{ $pembelian->id }})"
+                class="btn btn-secondary btn-sm">
+                Received
+            </button>
+            @break
+
+        @default
+            <span class="badge bg-warning">
+                {{ ucfirst($pembelian->status) }}
+            </span>
+    @endswitch
+</td>
 
                         </tr>
                     @endforeach

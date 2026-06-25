@@ -103,7 +103,7 @@
                 <th>Nama Barang</th>
                 <th class="text-center" width="10%">Qty</th>
                 <th class="text-right" width="15%">Harga Satuan</th>
-                <th class="text-right" width="15%">Diskon (@)</th>
+                <th class="text-right" width="15%">Diskon (%)</th>
                 <th class="text-right" width="10%">PPN (%)</th>
                 <th class="text-right" width="15%">Subtotal</th>
             </tr>
@@ -115,7 +115,7 @@
                 <td>{{ $detail->barang->nama_barang ?? '-' }}</td>
                 <td class="text-center">{{ number_format($detail->qty, 0, ',', '.') }}</td>
                 <td class="text-right">{{ number_format($detail->harga_satuan, 0, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($detail->diskon, 0, ',', '.') }}</td>
+                <td class="text-right">{{ number_format($detail->diskon, 0, ',', '.') }}%</td>
                 <td class="text-right">{{ number_format($detail->ppn, 2, ',', '.') }}%</td>
                 <td class="text-right">{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
             </tr>

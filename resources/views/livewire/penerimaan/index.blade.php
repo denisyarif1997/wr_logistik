@@ -116,10 +116,10 @@
                                             <button wire:click="edit({{ $penerimaan->id }})" class="btn btn-warning" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <button wire:click="delete({{ $penerimaan->id }})" class="btn btn-danger" 
+                                            <!-- <button wire:click="delete({{ $penerimaan->id }})" class="btn btn-danger" 
                                                 onclick="return confirm('Yakin hapus data penerimaan ini?');" title="Hapus">
                                                 <i class="fas fa-trash"></i>
-                                            </button>
+                                            </button> -->
                                         @endif
                                     </div>
                                 </td>

@@ -88,7 +88,7 @@ class Akun extends Component
         );
 
         $message = $this->akun_id ? 'Akun updated successfully.' : 'Akun created successfully.';
-        $this->dispatch('notify', $message);
+        $this->dispatch('notify', message: $message, type: 'success');
         $this->closeModal();
         $this->resetInputFields();
     }
@@ -96,6 +96,6 @@ class Akun extends Component
     public function delete($id)
     {
         ModelsAkun::findOrFail($id)->delete();
-        $this->dispatch('notify', 'Akun deleted successfully.');
+        $this->dispatch('notify', message: 'Akun deleted successfully.', type: 'success');
     }
 }

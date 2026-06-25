@@ -38,7 +38,10 @@ class ProfileController extends Controller
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
         }
-        User::where('id', $request->user()->id)->update(['mode'=>$request->mode]);
+        User::where('id', $request->user()->id)->update([
+            'mode' => $request->mode,
+            'theme' => $request->theme ?? 'default'
+        ]);
 
         $request->user()->save();
 

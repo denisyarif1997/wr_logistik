@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Suppliers;
+use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
 
 class Pembelian extends Model
@@ -21,6 +24,7 @@ class Pembelian extends Model
         'supplier_id',
         'status',
         'ppn',
+        'ppn_master_id',
         'diskon',
         'biaya_lain',
         'inserted_user',
@@ -39,6 +43,11 @@ class Pembelian extends Model
     public function supplier()
     {
         return $this->belongsTo(Suppliers::class);
+    }
+
+    public function ppnMaster()
+    {
+        return $this->belongsTo(Ppn::class, 'ppn_master_id');
     }
 
     public function details()
@@ -64,4 +73,33 @@ class Pembelian extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
+
+    // Scope filter tanggal & search (supplier/no_po)
+    public function scopeFilter($query, $startDate, $endDate, $search)
+    {
+        return $query
+            ->when($startDate, fn($q) => $q->whereDate('tanggal_po', '>=', $startDate))
+            ->when($endDate,   fn($q) => $q->whereDate('tanggal_po', '<=', $endDate))
+            ->when($search, function($q) use ($search) {
+                $q->whereRaw('LOWER(no_po) LIKE ?', ['%' . strtolower($search) . '%'])
+                  ->orWhereHas('supplier', fn($s) =>
+                      $s->whereRaw('LOWER(nama_supplier) LIKE ?', ['%' . strtolower($search) . '%'])
+                  );
+            });
+    }
+
+    // Search supplier untuk form PO (autocomplete/dropdown)
+    public static function searchSupplier(string $keyword)
+    {
+        return Suppliers::query()
+            ->whereRaw('LOWER(nama_supplier) LIKE ?', ['%' . strtolower($keyword) . '%'])
+            ->orWhereRaw('LOWER(kode_supplier) LIKE ?', ['%' . strtolower($keyword) . '%'])
+            ->orderBy('nama_supplier')
+            ->limit(20)
+            ->get(['id', 'nama_supplier', 'kode_supplier']);
+    }
+
+  
+    
+
 }

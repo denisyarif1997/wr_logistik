@@ -96,7 +96,7 @@ class Gudang extends Component
 
         $message = $this->gudang_id ? 'Gudang updated successfully.' : 'Gudang created successfully.';
 
-        $this->dispatch('notify', $message);
+        $this->dispatch('notify', message: $message, type: 'success');
         $this->closeModal();
         $this->resetInputFields();
     }
@@ -108,6 +108,6 @@ class Gudang extends Component
         $gudang->update(['deleted_by' => Auth::id()]);
         $gudang->delete();
 
-        $this->dispatch('notify', 'Gudang deleted successfully.');
+        $this->dispatch('notify', message: 'Gudang deleted successfully.', type: 'success');
     }
 }

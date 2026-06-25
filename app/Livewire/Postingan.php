@@ -71,7 +71,7 @@ class Postingan extends Component
             ? 'Postingan berhasil diperbarui.'
             : 'Supplier berhasil ditambahkan.';
 
-        $this->dispatch('notify', $message);
+        $this->dispatch('notify', message: $message, type: 'success');
 
         $this->closeModal();
         $this->resetInputFields();       
@@ -84,7 +84,7 @@ class Postingan extends Component
         $postingan->update(['deleted_by' => Auth::id()]);
         $postingan->delete();
 
-        $this->dispatch('notify', 'Postingan berhasil dihapus.');
+        $this->dispatch('notify', message: 'Postingan berhasil dihapus.', type: 'success');
     }
 
     private function resetInputFields()

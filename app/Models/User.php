@@ -24,7 +24,8 @@ class User extends Authenticatable
         'phonenumber',
         'provider_id',
         'avatar',
-        'mode' // light or dark theme
+        'mode', // light or dark theme
+        'theme' // application theme (default, old, etc)
     ];
 
     /**

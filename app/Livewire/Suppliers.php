@@ -34,7 +34,7 @@ class Suppliers extends Component
     public function render()
     {
         $suppliers = ModelsSuppliers::whereNull('deleted_at')
-            ->where('nama_supplier', 'like', '%'.$this->search.'%')
+            ->whereRaw('LOWER(nama_supplier) LIKE ?', ['%'.strtolower($this->search).'%'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -82,7 +82,7 @@ class Suppliers extends Component
             ? 'Supplier berhasil diperbarui.'
             : 'Supplier berhasil ditambahkan.';
 
-        $this->dispatch('notify', $message);
+        $this->dispatch('notify', message: $message, type: 'success');
 
         $this->closeModal();
         $this->resetInputFields();       
@@ -95,7 +95,7 @@ class Suppliers extends Component
         $supplier->update(['deleted_by' => Auth::id()]);
         $supplier->delete();
 
-        $this->dispatch('notify', 'Supplier berhasil dihapus.');
+        $this->dispatch('notify', message: 'Supplier berhasil dihapus.', type: 'success');
     }
 
     private function resetInputFields()

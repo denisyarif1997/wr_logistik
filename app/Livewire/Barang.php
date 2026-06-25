@@ -135,7 +135,7 @@ class Barang extends Component
 
         $message = $isNew ? 'Barang created successfully.' : 'Barang updated successfully.';
 
-        $this->dispatch('notify', $message);
+        $this->dispatch('notify', message: $message, type: 'success');
 
         $this->closeModal();
         $this->resetInputFields();
@@ -148,6 +148,6 @@ class Barang extends Component
         $barang->update(['deleted_by' => Auth::id()]);
         $barang->delete();
 
-        $this->dispatch('notify', 'Barang deleted successfully.');
+        $this->dispatch('notify', message: 'Barang deleted successfully.', type: 'success');
     }
 }

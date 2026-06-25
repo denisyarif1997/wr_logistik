@@ -1,8 +1,8 @@
 {{-- Dashboard CSS --}}
 <style>
     .dashboard-box {
-        border-radius: 12px;
-        padding: 24px;
+        border-radius: 8px;
+        padding: 16px;
         color: white;
         position: relative;
         overflow: hidden;
@@ -18,22 +18,22 @@
 
     .dashboard-icon {
         position: absolute;
-        top: 20px;
-        right: 20px;
-        font-size: 48px;
+        top: 14px;
+        right: 14px;
+        font-size: 36px;
         opacity: 0.3;
     }
 
     .dashboard-inner h3 {
-        font-size: 42px;
+        font-size: 30px;
         font-weight: 700;
         margin: 0;
         text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .dashboard-inner p {
-        margin: 8px 0 0;
-        font-size: 16px;
+        margin: 4px 0 0;
+        font-size: 13px;
         font-weight: 500;
         opacity: 0.95;
     }
@@ -49,13 +49,13 @@
 
     .small-box-footer {
         display: block;
-        margin-top: 15px;
-        padding-top: 10px;
+        margin-top: 10px;
+        padding-top: 6px;
         border-top: 1px solid rgba(255,255,255,0.3);
         color: white !important;
         text-decoration: none;
         font-weight: 600;
-        font-size: 14px;
+        font-size: 11px;
         transition: all 0.3s ease;
     }
 
@@ -79,12 +79,12 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border-radius: 12px 12px 0 0 !important;
-        padding: 15px 20px;
+        padding: 10px 16px;
         border: none;
     }
 
     .table-modern {
-        font-size: 14px;
+        font-size: 11px;
     }
 
     .table-modern thead th {
@@ -92,29 +92,29 @@
         font-weight: 600;
         color: #495057;
         text-transform: uppercase;
-        font-size: 12px;
+        font-size: 10px;
         letter-spacing: 0.5px;
     }
 
     .badge-modern {
-        padding: 6px 12px;
-        border-radius: 6px;
+        padding: 4px 8px;
+        border-radius: 4px;
         font-weight: 600;
-        font-size: 11px;
+        font-size: 9px;
     }
 
     .alert-modern {
-        border-radius: 10px;
+        border-radius: 8px;
         border: none;
-        padding: 15px 20px;
+        padding: 10px 16px;
     }
 
     .section-title {
-        font-size: 20px;
+        font-size: 16px;
         font-weight: 700;
         color: #2d3748;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
+        margin-bottom: 14px;
+        padding-bottom: 6px;
         border-bottom: 3px solid #667eea;
         display: inline-block;
     }
@@ -248,7 +248,7 @@
         </div>
 
         {{-- Low Stock Alert --}}
-        @if($lowStockItems->count() > 0)
+        @if($lowStockItems && $lowStockItems->count() > 0)
         <div class="row mb-4">
             <div class="col-12">
                 <div class="alert alert-warning alert-modern">
@@ -406,7 +406,7 @@
                                         <td>{{ $item->nama_barang }}</td>
                                         <td>
                                             <span class="badge badge-danger badge-modern">
-                                                {{ $item->stok->sum('stok_akhir') }}
+                                                {{ $item->total_stok }}
                                             </span>
                                         </td>
                                         <td>{{ $item->stok_minimum }}</td>

@@ -23,6 +23,11 @@ class Jurnal extends Component
     public $search = '';
     public $startDate, $endDate;
 
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
     public function mount()
     {
         $this->startDate = now()->subMonth()->format('Y-m-d');

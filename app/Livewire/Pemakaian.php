@@ -40,7 +40,7 @@ class Pemakaian extends Component
     public function render()
     {
         $pemakaians = ModelsPemakaian::with(['departemen', 'gudang', 'details.barang'])
-            ->where('no_pemakaian', 'like', "%{$this->search}%")
+            ->whereRaw('LOWER(no_pemakaian) LIKE ?', ['%' . strtolower($this->search) . '%'])
             ->whereBetween('tanggal_pakai', [$this->startDate, $this->endDate])
             ->latest()->paginate(10);
 
@@ -53,7 +53,7 @@ class Pemakaian extends Component
                         $q->where('gudang_id', $this->gudang_id)->where('stok_akhir', '>', 0);
                     })
                     ->with(['stok' => fn($q) => $q->where('gudang_id', $this->gudang_id)])
-                    ->where('nama_barang', 'like', '%' . $term . '%')
+                    ->whereRaw('LOWER(nama_barang) LIKE ?', ['%' . strtolower($term) . '%'])
                     ->limit(10)->get();
 
                     // If exact match with current selection, hide dropdown
@@ -104,7 +104,33 @@ class Pemakaian extends Component
         $this->barangSearch = array_values($this->barangSearch);
     }
 
-    public function create() { $this->resetForm(); $this->openModal(); }
+    public function create() 
+    { 
+        $this->resetForm(); 
+        $this->no_pemakaian = $this->generateNoPemakaian();
+        $this->openModal(); 
+    }
+
+    public function generateNoPemakaian()
+    {
+        // Format: PMK-YYYYMMDD-001
+        $today = now()->format('Ymd');
+        $prefix = 'PMK-' . $today . '-';
+
+        // Ambil nomor terakhir hari ini
+        $last = ModelsPemakaian::whereRaw('LOWER(no_pemakaian) LIKE ?', [strtolower($prefix) . '%'])
+            ->orderBy('no_pemakaian', 'desc')
+            ->first();
+
+        if ($last) {
+            $lastNumber = (int) substr($last->no_pemakaian, -3);
+            $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        } else {
+            $newNumber = '001';
+        }
+
+        return $prefix . $newNumber;
+    }
 
     public function edit($id)
     {
@@ -255,7 +281,7 @@ class Pemakaian extends Component
             }
         });
 
-        $this->dispatch('notify', $this->pemakaian_id ? 'Pemakaian diperbarui.' : 'Pemakaian berhasil disimpan.');
+        $this->dispatch('notify', message: $this->pemakaian_id ? 'Pemakaian diperbarui.' : 'Pemakaian berhasil disimpan.', type: 'success');
         $this->closeModal();
         $this->resetForm();
     }
@@ -289,6 +315,6 @@ class Pemakaian extends Component
             $pemakaian->delete();
         });
 
-        $this->dispatch('notify', 'Pemakaian berhasil dihapus.');
+        $this->dispatch('notify', message: 'Pemakaian berhasil dihapus.', type: 'success');
     }
 }

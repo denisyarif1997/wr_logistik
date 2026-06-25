@@ -97,8 +97,16 @@
                         @foreach($details as $index => $detail)
                             <tr>
                                 <td>
-                                    {{ $detail['nama_barang'] }}
-                                    <input type="hidden" wire:model="details.{{ $index }}.barang_id">
+                                    @if($isShow)
+                                        <span class="form-control-plaintext">{{ $detail['nama_barang'] }}</span>
+                                    @else
+                                        <select class="form-control" wire:model.live="details.{{ $index }}.barang_id">
+                                            <option value="">Pilih Barang</option>
+                                            @foreach($barangs as $barang)
+                                                <option value="{{ $barang->id }}">{{ $barang->nama_barang }}</option>
+                                            @endforeach
+                                        </select>
+                                    @endif
                                 </td>
                                 <td>
                                     {{ $detail['qty_po'] }}
@@ -112,11 +120,27 @@
                                     @error('details.'.$index.'.harga_satuan') <span class="text-danger">{{ $message }}</span>@enderror
                                 </td>
                                 <td>
-                                    <input type="number" class="form-control" wire:model.live="details.{{ $index }}.diskon" min="0" @if($isShow) readonly @endif>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" wire:model.live="details.{{ $index }}.diskon" min="0" max="100" @if($isShow) readonly @endif>
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
                                     @error('details.'.$index.'.diskon') <span class="text-danger">{{ $message }}</span>@enderror
                                 </td>
                                 <td>
-                                    <input type="number" class="form-control" wire:model.live="details.{{ $index }}.ppn" min="0" @if($isShow) readonly @endif>
+                                    @if($isShow)
+                                        <input type="text" class="form-control" value="{{ $detail['ppn'] }}%" readonly>
+                                    @else
+                                        <select class="form-control" wire:model.live="details.{{ $index }}.ppn">
+                                            <option value="0">0% (Tanpa PPN)</option>
+                                            @foreach($ppnMasters as $ppnMaster)
+                                                <option value="{{ $ppnMaster->rate }}">
+                                                    {{ $ppnMaster->kode_ppn }} - {{ $ppnMaster->rate }}%
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
                                     @error('details.'.$index.'.ppn') <span class="text-danger">{{ $message }}</span>@enderror
                                 </td>
                                 <td>
@@ -141,7 +165,12 @@
                         <tr>
                             <td colspan="6" class="text-right"><strong>Diskon (Global):</strong></td>
                             <td>
-                                <input type="number" wire:model.live="diskon" class="form-control text-right" min="0" @if($isShow) readonly @endif>
+                                <div class="input-group">
+                                    <input type="number" wire:model.live="diskon" class="form-control text-right" min="0" max="100" @if($isShow) readonly @endif>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                         <tr>
@@ -155,15 +184,20 @@
                                                 Hitung PPN
                                             </button>
                                             <div class="dropdown-menu dropdown-menu-right">
-                                                <a class="dropdown-item" href="#" wire:click.prevent="calculateGlobalPPNWithRate(10)">10%</a>
-                                                <a class="dropdown-item" href="#" wire:click.prevent="calculateGlobalPPNWithRate(11)">11%</a>
-                                                <a class="dropdown-item" href="#" wire:click.prevent="calculateGlobalPPNWithRate(12)">12%</a>
+                                                @foreach($ppnMasters as $ppnMaster)
+                                                    <a class="dropdown-item" href="#" wire:click.prevent="calculateGlobalPPNWithRate({{ $ppnMaster->rate }})">
+                                                        {{ $ppnMaster->kode_ppn }} - {{ $ppnMaster->rate }}%
+                                                    </a>
+                                                @endforeach
                                                 <div class="dropdown-divider"></div>
                                                 <a class="dropdown-item" href="#" wire:click.prevent="calculateGlobalPPNWithRate(0)">Reset (0%)</a>
                                             </div>
                                         </div>
                                     @endif
                                 </div>
+                                @if($ppn_rate > 0)
+                                    <small class="form-text text-muted">Tarif: {{ $ppn_rate }}%</small>
+                                @endif
                             </td>
                         </tr>
                         <tr>

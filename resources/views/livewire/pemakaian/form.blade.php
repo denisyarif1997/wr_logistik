@@ -9,7 +9,7 @@
                 <div class="col-md-4">
                     <div class="form-group">
                         <label for="no_pemakaian">No. Pemakaian</label>
-                        <input type="text" class="form-control" id="no_pemakaian" wire:model.lazy="no_pemakaian">
+                        <input type="text" class="form-control" id="no_pemakaian" wire:model.lazy="no_pemakaian" readonly>
                         @error('no_pemakaian') <span class="text-danger">{{ $message }}</span>@enderror
                     </div>
                 </div>
