@@ -114,6 +114,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         })->name('pemakaian.index');
     });
     
+    Route::middleware(['can:transfer'])->group(function(){
+        Route::get('/transfer-barang', \App\Livewire\TransferBarangManagement::class)->name('transfer.index');
+    });
+    
     // Laporan - requires respective permissions
     Route::middleware(['can:stok'])->group(function(){
         Route::get('/stok', function () {

@@ -120,10 +120,10 @@
             </li>
         @endcanany
 
-        @canany(['pembelian', 'penerimaan', 'pembayaran', 'pemakaian'])
+        @canany(['pembelian', 'penerimaan', 'pembayaran', 'pemakaian', 'transfer'])
             <!-- TRANSAKSI -->
-            <li class="nav-item has-treeview {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*')|| Route::is('admin.pembayaran.*') ? 'menu-open' : '' }}">
-                <a href="#" class="nav-link {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*')|| Route::is('admin.pembayaran.*') ? 'active' : '' }}">
+            <li class="nav-item has-treeview {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*')|| Route::is('admin.pembayaran.*') || Route::is('admin.transfer.*') ? 'menu-open' : '' }}">
+                <a href="#" class="nav-link {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*')|| Route::is('admin.pembayaran.*') || Route::is('admin.transfer.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-exchange-alt"></i>
                     <p>
                         Transaksi
@@ -161,6 +161,15 @@
                         <a href="{{ route('admin.pemakaian.index') }}" class="nav-link {{ Route::is('admin.pemakaian.index') ? 'active' : '' }}">
                             <i class="far fa-circle nav-icon"></i>
                             <p>Pemakaian</p>
+                        </a>
+                    </li>
+                    @endcan
+
+                    @can('transfer')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.transfer.index') }}" class="nav-link {{ Route::is('admin.transfer.*') ? 'active' : '' }}">
+                            <i class="far fa-circle nav-icon"></i>
+                            <p>Transfer Barang</p>
                         </a>
                     </li>
                     @endcan

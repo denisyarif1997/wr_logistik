@@ -1,9 +1,44 @@
+@php
+    // Helper function to get page title from route name
+    function getPageTitle() {
+        $titleMap = [
+            'admin.dashboard' => 'Dashboard',
+            'admin.user.*' => 'Manajemen Pengguna',
+            'admin.role.*' => 'Manajemen Role',
+            'admin.permission.*' => 'Manajemen Permission',
+            'admin.barang.*' => 'Master Barang',
+            'admin.suppliers.*' => 'Master Supplier',
+            'admin.gudang.*' => 'Master Gudang',
+            'admin.departemen.*' => 'Master Departemen',
+            'admin.akun.*' => 'Master COA',
+            'admin.ppn.*' => 'Master PPN',
+            'admin.satuan.*' => 'Master Satuan',
+            'admin.pembelian.*' => 'Purchase Order',
+            'admin.penerimaan.*' => 'Penerimaan Barang',
+            'admin.pembayaran.*' => 'Pembayaran',
+            'admin.pemakaian.*' => 'Pemakaian Barang',
+            'admin.transfer.*' => 'Transfer Barang',
+            'admin.stok.*' => 'Laporan Stok',
+            'admin.jurnal.*' => 'Laporan Jurnal',
+            'admin.profile.*' => 'Profil Saya',
+        ];
+        
+        foreach ($titleMap as $pattern => $title) {
+            if (request()->routeIs($pattern)) {
+                return $title;
+            }
+        }
+        
+        return 'Dashboard';
+    }
+@endphp
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Dashboard') | {{ config('app.name') }}</title>
+    <title>{{ $title ?? 'Dashboard' }} | {{ config('app.name') }}</title>
 
     <!-- Preconnect for faster font loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -553,15 +588,15 @@
             <section class="content-header">
                 <div class="container-fluid">
                     <div class="row align-items-center">
-                        <div class="col-sm-6">
-                            <h4>@yield('title')</h4>
-                        </div>
-                        <div class="col-sm-6">
-                            <ol class="breadcrumb float-sm-right">
-                                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}"><i class="fas fa-home mr-1"></i>Home</a></li>
-                                <li class="breadcrumb-item active">@yield('title')</li>
-                            </ol>
-                        </div>
+                <div class="col-sm-6">
+                    <h4>{{ $title ?? getPageTitle() }}</h4>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}"><i class="fas fa-home mr-1"></i>Home</a></li>
+                        <li class="breadcrumb-item active">{{ $title ?? getPageTitle() }}</li>
+                    </ol>
+                </div>
                     </div>
                 </div>
             </section>
