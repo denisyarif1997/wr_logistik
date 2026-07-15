@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Barang as ModelsBarang;
 use App\Models\Stok;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ class Barang extends Component
 
     protected $paginationTheme = 'bootstrap';
 
-    public $kode_barang, $nama_barang, $satuan, $stok_minimum, $harga_beli_terakhir, $is_jual = false, $margin_jual;
+    public $kode_barang, $nama_barang,$barcode, $satuan, $stok_minimum, $harga_beli_terakhir, $is_jual = false, $margin_jual;
     public $barang_id;
     public $isOpen = false;
     public $search = '';
@@ -71,6 +72,7 @@ class Barang extends Component
 
     public function create()
     {
+        Gate::authorize('barang-create');
         $this->resetInputFields();
         $this->openModal();
     }
@@ -99,6 +101,7 @@ class Barang extends Component
 
     public function edit($id)
     {
+        Gate::authorize('barang-edit');
         $barang = ModelsBarang::findOrFail($id);
 
         $this->barang_id = $barang->id;
@@ -115,6 +118,9 @@ class Barang extends Component
 
     public function store()
     {
+        $permission = $this->barang_id ? 'barang-edit' : 'barang-create';
+        Gate::authorize($permission);
+
         $this->validate();
 
         $userId = auth()->id();
@@ -126,6 +132,7 @@ class Barang extends Component
             [
                 'kode_barang' => $this->kode_barang,
                 'nama_barang' => $this->nama_barang,
+                'barcode' => $this->barcode,
                 'satuan' => $this->satuan,
                 'stok_minimum' => $this->stok_minimum,
                 'harga_beli_terakhir' => $this->harga_beli_terakhir,
@@ -152,6 +159,8 @@ class Barang extends Component
 
     public function delete($id)
     {
+        Gate::authorize('barang-delete');
+
         $barang = ModelsBarang::findOrFail($id);
         $barang->update(['deleted_by' => Auth::id()]);
         $barang->delete();

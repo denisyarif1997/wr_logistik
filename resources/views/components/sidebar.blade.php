@@ -201,10 +201,10 @@
             </li>
         @endcanany
 
-        @canany(['stok', 'jurnal'])
+        @canany(['stok', 'jurnal', 'buku_besar'])
             <!-- LAPORAN -->
-            <li class="nav-item has-treeview {{ Route::is('admin.stok.*') || Route::is('admin.jurnal.*') ? 'menu-open' : '' }}">
-                <a href="#" class="nav-link {{ Route::is('admin.stok.*') || Route::is('admin.jurnal.*') ? 'active' : '' }}">
+            <li class="nav-item has-treeview {{ Route::is('admin.stok.*') || Route::is('admin.jurnal.*') || Route::is('admin.buku-besar.*') ? 'menu-open' : '' }}">
+                <a href="#" class="nav-link {{ Route::is('admin.stok.*') || Route::is('admin.jurnal.*') || Route::is('admin.buku-besar.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-file-alt"></i>
                     <p>
                         Laporan
@@ -225,6 +225,14 @@
                         <a href="{{ route('admin.jurnal.index') }}" class="nav-link {{ Route::is('admin.jurnal.index') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-book"></i>
                             <p>Jurnal</p>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('buku_besar')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.buku-besar.index') }}" class="nav-link {{ Route::is('admin.buku-besar.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-book-open"></i>
+                            <p>Buku Besar</p>
                         </a>
                     </li>
                     @endcan

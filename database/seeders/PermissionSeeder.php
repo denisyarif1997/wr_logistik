@@ -94,6 +94,8 @@ class PermissionSeeder extends Seeder
             'stok-view',
             'jurnal',
             'jurnal-view',
+            'buku_besar',
+            'buku_besar-view',
             
             // User Management
             'user',

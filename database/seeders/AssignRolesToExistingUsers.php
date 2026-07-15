@@ -18,30 +18,30 @@ class AssignRolesToExistingUsers extends Seeder
         $usersWithoutRoles = User::whereDoesntHave('roles')->get();
 
         if ($usersWithoutRoles->isEmpty()) {
-            $this->info('All users already have roles assigned.');
+            echo "All users already have roles assigned.\n";
             return;
         }
 
-        $this->info("Found {$usersWithoutRoles->count()} users without roles.");
-        $this->info('Assigning default role (vendor) to users without roles...');
+        echo "Found {$usersWithoutRoles->count()} users without roles.\n";
+        echo "Assigning default role (vendor) to users without roles...\n";
 
         // Get vendor role
         $vendorRole = Role::where('name', 'vendor')->first();
 
         if (!$vendorRole) {
-            $this->error('Vendor role not found. Please run RoleSeeder first.');
+            echo "Vendor role not found. Please run RoleSeeder first.\n";
             return;
         }
 
         // Assign vendor role to all users without roles
         foreach ($usersWithoutRoles as $user) {
             $user->assignRole('vendor');
-            $this->line("  ✓ Assigned 'vendor' role to {$user->name} ({$user->email})");
+            echo "  ✓ Assigned 'vendor' role to {$user->name} ({$user->email})\n";
         }
 
-        $this->info('✓ Successfully assigned roles to all users without roles.');
-        $this->info('');
-        $this->info('To change a user\'s role, use:');
-        $this->info('  php artisan user:assign-role');
+        echo "✓ Successfully assigned roles to all users without roles.\n";
+        echo "\n";
+        echo "To change a user's role, use:\n";
+        echo "  php artisan user:assign-role\n";
     }
 }

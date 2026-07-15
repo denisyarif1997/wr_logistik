@@ -63,6 +63,8 @@ class RoleSeeder extends Seeder
             'stok-view',
             'jurnal',
             'jurnal-view',
+            'buku_besar',
+            'buku_besar-view',
         ];
         $vendorRole->syncPermissions($vendorPermissions);
 
@@ -96,6 +98,8 @@ class RoleSeeder extends Seeder
             'stok-view',
             'jurnal',
             'jurnal-view',
+            'buku_besar',
+            'buku_besar-view',
         ];
         $userRole->syncPermissions($userPermissions);
     }

@@ -22,14 +22,15 @@ class UserController extends Controller
     public function create()
     {
         return view('admin.user.create');
+        
     }
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required', 'string', 'max:255',
-            'email' => 'required', 'string', 'email', 'max:255', 'unique:'.User::class,
-            'password' => 'required|max:255|min:6',
-            'role' => 'required'
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|string|email|max:255|unique:' . User::class,
+            'password' => 'required|min:6|max:255',
+            'role'     => 'required|string',
         ]);
 
         $user = User::create([
@@ -38,6 +39,7 @@ class UserController extends Controller
             'password' => bcrypt($request->password),
         ]);
         $user->assignRole($request->role);
+        // dd($user);
         return redirect()->route('admin.user.index')->with('success','User created successfully.');
     }
     public function edit($id)
@@ -48,16 +50,16 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name'  => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'role' => ['required', 'string']
-        ]); 
-        $user = User::find($request->id);
-        $user->name = $request->name;
+            'role'  => ['required', 'string'],
+        ]);
+
+        $user->name  = $request->name;
         $user->email = $request->email;
         $user->save();
-        $user->assignRole($request->role);
-        return redirect()->route('admin.user.index')->with('success','User updated successfully.');
+        $user->syncRoles($request->role);   // ← syncRoles: hapus role lama, set role baru
+        return redirect()->route('admin.user.index')->with('success', 'User updated successfully.');
     }
     public function destroy($id)
     {

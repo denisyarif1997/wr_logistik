@@ -24,6 +24,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
     // Role Management - requires role permission
     Route::middleware(['can:role'])->group(function(){
         Route::resource('role',RoleController::class);
+        Route::get('role/{id}/permissions', [RoleController::class, 'permissions'])->name('role.permissions');
+        Route::put('role/{id}/permissions', [RoleController::class, 'syncPermissions'])->name('role.syncPermissions');
     });
     
     // Permission Management - requires permission permission
@@ -145,5 +147,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         Route::get('/jurnal', function () {
             return view('admin.jurnal.index');
         })->name('jurnal.index');
+    });
+
+    Route::middleware(['can:buku_besar'])->group(function(){
+        Route::get('/buku-besar', function () {
+            return view('admin.buku-besar.index');
+        })->name('buku-besar.index');
     });
 });

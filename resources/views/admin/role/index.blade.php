@@ -13,6 +13,7 @@
                     <tr>
                         <th>Name</th>
                         <th>Created</th>
+                        <th>Permission</th>
                         <th>Action</th>
                         <th></th>
                     </tr>
@@ -22,6 +23,11 @@
                         <tr>
                             <td>{{ $role->name }}</td>
                             <td>{{ $role->created_at }}</td>
+                            <td>
+                                <a href="{{ route('admin.role.permissions', encrypt($role->id)) }}" class="btn btn-sm btn-warning" title="Kelola Permission">
+                                    <i class="fas fa-key"></i> Permission
+                                </a>
+                            </td>
                             <td>
                                 <a href="{{ route('admin.role.edit',encrypt($role->id)) }}" class="btn btn-sm btn-secondary">
                                     <i class="far fa-edit"></i>
@@ -34,7 +40,7 @@
                                     <button type="submit" class="btn btn-danger">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
-                            </form>
+                                </form>
                             </td>
                         </tr>
                     @endforeach

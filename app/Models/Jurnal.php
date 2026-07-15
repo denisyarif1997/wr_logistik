@@ -9,8 +9,6 @@ class Jurnal extends Model
 {
     use HasFactory;
     
-    public $timestamps = false;
-
     protected $table = 'jurnal';
 
     protected $fillable = [

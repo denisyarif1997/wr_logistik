@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class RoleController extends Controller
 {
@@ -48,5 +49,22 @@ class RoleController extends Controller
     {
         Role::where('id',decrypt($id))->delete();
         return redirect()->route('admin.role.index')->with('error','Role deleted successfully.');
+    }
+
+    public function permissions($id)
+    {
+        $role            = Role::where('id', decrypt($id))->firstOrFail();
+        $permissions     = Permission::orderBy('name')->get();
+        $rolePermissions = $role->permissions;
+        return view('admin.role.permissions', compact('role', 'permissions', 'rolePermissions'));
+    }
+
+    public function syncPermissions(Request $request, $id)
+    {
+        $role = Role::where('id', decrypt($id))->firstOrFail();
+        $role->syncPermissions($request->input('permissions', []));
+        return redirect()
+            ->route('admin.role.permissions', encrypt($role->id))
+            ->with('success', 'Permission untuk role "' . $role->name . '" berhasil diperbarui.');
     }
 }

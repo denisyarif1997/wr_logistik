@@ -15,6 +15,11 @@
                 @error('nama_barang') <span class="text-danger">{{ $message }}</span>@enderror
             </div>
             <div class="form-group">
+                <label for="barcode">Barcode</label>
+                <input type="text" class="form-control" id="barcode" placeholder="Enter Barcode" wire:model="barcode">
+                @error('barcode') <span class="text-danger">{{ $message }}</span>@enderror
+            </div>
+            <div class="form-group">
                 <label for="satuan">Satuan</label>
                 <select wire:model="satuan" class="form-control">
                     <option value="">Select Satuan</option>
