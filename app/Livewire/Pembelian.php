@@ -438,6 +438,7 @@ class Pembelian extends Component
                 'subtotal' => $subtotal,
             ];
             $this->barangSearch[$index] = $detail->barang->nama_barang ?? '';
+            // dd ($pembelian);
         }
 
         // Try to find matching PPN master for display

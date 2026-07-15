@@ -24,7 +24,7 @@
                     @can('user')
                     <li class="nav-item">
                         <a href="{{ route('admin.user.index') }}" class="nav-link {{ Route::is('admin.user.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-user"></i>
                             <p>Users</p>
                         </a>
                     </li>
@@ -32,7 +32,7 @@
                     @can('role')
                     <li class="nav-item">
                         <a href="{{ route('admin.role.index') }}" class="nav-link {{ Route::is('admin.role.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-user-tag"></i>
                             <p>Roles</p>
                         </a>
                     </li>
@@ -40,7 +40,7 @@
                     @can('permission')
                     <li class="nav-item">
                         <a href="{{ route('admin.permission.index') }}" class="nav-link {{ Route::is('admin.permission.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-key"></i>
                             <p>Permissions</p>
                         </a>
                     </li>
@@ -63,7 +63,7 @@
                     @can('barang')
                     <li class="nav-item">
                         <a href="{{ route('admin.barang.index') }}" class="nav-link {{ Route::is('admin.barang.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-box"></i>
                             <p>Barang</p>
                         </a>
                     </li>
@@ -71,7 +71,7 @@
                     @can('satuan')
                       <li class="nav-item">
                         <a href="{{ route('admin.satuan.index') }}" class="nav-link {{ Route::is('admin.satuan.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-ruler-combined"></i>
                             <p>Satuan Barang</p>
                         </a>
                     </li>
@@ -79,7 +79,7 @@
                     @can('supplier')
                     <li class="nav-item">
                         <a href="{{ route('admin.suppliers.index') }}" class="nav-link {{ Route::is('admin.suppliers.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-truck"></i>
                             <p>Supplier</p>
                         </a>
                     </li>
@@ -87,7 +87,7 @@
                     @can('gudang')
                     <li class="nav-item">
                         <a href="{{ route('admin.gudang.index') }}" class="nav-link {{ Route::is('admin.gudang.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-warehouse"></i>
                             <p>Gudang</p>
                         </a>
                     </li>
@@ -95,7 +95,7 @@
                     @can('departemen')
                     <li class="nav-item">
                         <a href="{{ route('admin.departemen.index') }}" class="nav-link {{ Route::is('admin.departemen.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-sitemap"></i>
                             <p>Departemen</p>
                         </a>
                     </li>
@@ -103,7 +103,7 @@
                     @can('coa')
                     <li class="nav-item">
                         <a href="{{ route('admin.akun.index') }}" class="nav-link {{ Route::is('admin.akun.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-list-alt"></i>
                             <p>Coa</p>
                         </a>
                     </li>
@@ -111,7 +111,7 @@
                     @can('ppn')
                     <li class="nav-item">
                         <a href="{{ route('admin.ppn.index') }}" class="nav-link {{ Route::is('admin.ppn.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-percent"></i>
                             <p>PPN</p>
                         </a>
                     </li>
@@ -120,10 +120,10 @@
             </li>
         @endcanany
 
-        @canany(['pembelian', 'penerimaan', 'pembayaran', 'pemakaian', 'transfer'])
+        @canany(['pembelian', 'penerimaan', 'pembayaran', 'pemakaian', 'transfer', 'penyesuaian', 'kasir'])
             <!-- TRANSAKSI -->
-            <li class="nav-item has-treeview {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*')|| Route::is('admin.pembayaran.*') || Route::is('admin.transfer.*') ? 'menu-open' : '' }}">
-                <a href="#" class="nav-link {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*')|| Route::is('admin.pembayaran.*') || Route::is('admin.transfer.*') ? 'active' : '' }}">
+            <li class="nav-item has-treeview {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*')|| Route::is('admin.pembayaran.*') || Route::is('admin.transfer.*') || Route::is('admin.penyesuaian.*') || Route::is('admin.kasir.*') || Route::is('admin.penjualan.*') ? 'menu-open' : '' }}">
+                <a href="#" class="nav-link {{ Route::is('admin.pembelian.*') || Route::is('admin.penerimaan.*') || Route::is('admin.pemakaian.*')|| Route::is('admin.pembayaran.*') || Route::is('admin.transfer.*') || Route::is('admin.penyesuaian.*') || Route::is('admin.kasir.*') || Route::is('admin.penjualan.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-exchange-alt"></i>
                     <p>
                         Transaksi
@@ -134,7 +134,7 @@
                     @can('pembelian')
                     <li class="nav-item">
                         <a href="{{ route('admin.pembelian.index') }}" class="nav-link {{ Route::is('admin.pembelian.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-file-invoice"></i>
                             <p>Purchase Order</p>
                         </a>
                     </li>
@@ -142,7 +142,7 @@
                     @can('penerimaan')
                     <li class="nav-item">
                         <a href="{{ route('admin.penerimaan.index') }}" class="nav-link {{ Route::is('admin.penerimaan.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-dolly"></i>
                             <p>Penerimaan</p>
                         </a>
                     </li>
@@ -150,16 +150,16 @@
                     @can('pembayaran')
                      <li class="nav-item">
                         <a href="{{ route('admin.pembayaran.index') }}" class="nav-link {{ Route::is('admin.pembayaran.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-money-check-alt"></i>
                             <p>Pembayaran</p>
                         </a>
                     </li>
                     @endcan
-                    
+
                     @can('pemakaian')
                     <li class="nav-item">
                         <a href="{{ route('admin.pemakaian.index') }}" class="nav-link {{ Route::is('admin.pemakaian.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-box-open"></i>
                             <p>Pemakaian</p>
                         </a>
                     </li>
@@ -168,8 +168,32 @@
                     @can('transfer')
                     <li class="nav-item">
                         <a href="{{ route('admin.transfer.index') }}" class="nav-link {{ Route::is('admin.transfer.*') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-truck-loading"></i>
                             <p>Transfer Barang</p>
+                        </a>
+                    </li>
+                    @endcan
+
+                    @can('penyesuaian')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.penyesuaian.index') }}" class="nav-link {{ Route::is('admin.penyesuaian.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-balance-scale"></i>
+                            <p>Penyesuaian Stok</p>
+                        </a>
+                    </li>
+                    @endcan
+
+                    @can('kasir')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.kasir.index') }}" class="nav-link {{ Route::is('admin.kasir.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-cash-register"></i>
+                            <p>Kasir</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.penjualan.index') }}" class="nav-link {{ Route::is('admin.penjualan.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-receipt"></i>
+                            <p>Daftar Penjualan</p>
                         </a>
                     </li>
                     @endcan
@@ -191,7 +215,7 @@
                     @can('stok')
                     <li class="nav-item">
                         <a href="{{ route('admin.stok.index') }}" class="nav-link {{ Route::is('admin.stok.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-boxes"></i>
                             <p>Stok</p>
                         </a>
                     </li>
@@ -199,7 +223,7 @@
                     @can('jurnal')
                     <li class="nav-item">
                         <a href="{{ route('admin.jurnal.index') }}" class="nav-link {{ Route::is('admin.jurnal.index') ? 'active' : '' }}">
-                            <i class="far fa-circle nav-icon"></i>
+                            <i class="nav-icon fas fa-book"></i>
                             <p>Jurnal</p>
                         </a>
                     </li>

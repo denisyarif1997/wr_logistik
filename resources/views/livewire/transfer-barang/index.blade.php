@@ -46,7 +46,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Gudang Asal <span class="text-danger">*</span></label>
-                                        <select wire:model="gudang_asal_id" class="form-control">
+                                        <select wire:model.live="gudang_asal_id" class="form-control">
                                             <option value="">-- Pilih Gudang Asal --</option>
                                             @foreach($gudangList as $gudang)
                                                 <option value="{{ $gudang->id }}">{{ $gudang->nama_gudang }}</option>
@@ -60,7 +60,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Gudang Tujuan <span class="text-danger">*</span></label>
-                                        <select wire:model="gudang_tujuan_id" class="form-control">
+                                        <select wire:model.live="gudang_tujuan_id" class="form-control">
                                             <option value="">-- Pilih Gudang Tujuan --</option>
                                             @foreach($gudangList as $gudang)
                                                 <option value="{{ $gudang->id }}">{{ $gudang->nama_gudang }}</option>
@@ -104,29 +104,27 @@
                                                 @foreach($details as $index => $detail)
                                                     <tr>
                                                         <td>
-                                                            <select wire:model="details.{{ $index }}.barang_id" class="form-control form-control-sm">
+                                                            <select wire:model.live="details.{{ $index }}.barang_id" class="form-control form-control-sm">
                                                                 <option value="">-- Pilih Barang --</option>
                                                                 @foreach($barangList as $barang)
                                                                     <option value="{{ $barang->id }}">{{ $barang->nama_barang }} ({{ $barang->kode_barang }})</option>
                                                                 @endforeach
                                                             </select>
-                                                            @error('details.{{ $index }}.barang_id') <span class="text-danger text-xs">{{ $message }}</span> @enderror
+                                                            @error('details.'.$index.'.barang_id') <span class="text-danger text-xs">{{ $message }}</span> @enderror
                                                         </td>
                                                         <td>
                                                             <input type="text" wire:model="details.{{ $index }}.keterangan" class="form-control form-control-sm" placeholder="Keterangan...">
                                                         </td>
-                                <td>
-                                    <input type="number" step="0.01" wire:model="details.{{ $index }}.qty" class="form-control form-control-sm text-center" placeholder="0" min="0.01">
-                                    @error('details.{{ $index }}.qty') <span class="text-danger text-xs">{{ $message }}</span> @enderror
-                                    @if(isset($stokInfo[$detail['barang_id']]))
-                                        <small class="text-muted">
-                                            Stok Asal: {{ $stokInfo[$detail['barang_id']]['asal'] }} 
-                                            @if($this->gudang_tujuan_id && $stokInfo[$detail['barang_id']]['tujuan'] !== null)
-                                                | Stok Tujuan: {{ $stokInfo[$detail['barang_id']]['tujuan'] }}
-                                            @endif
-                                        </small>
-                                    @endif
-                                </td>
+                                                        <td>
+                                                            <input type="number" step="0.01" wire:model="details.{{ $index }}.qty" class="form-control form-control-sm text-center" placeholder="0" min="0.01">
+                                                            @error('details.'.$index.'.qty') <span class="text-danger text-xs">{{ $message }}</span> @enderror
+                                                            @if(!empty($detail['barang_id']) && isset($stokInfo[$detail['barang_id']]))
+                                                                <small class="text-muted d-block mt-1">
+                                                                    Stok Asal: {{ $stokInfo[$detail['barang_id']]['asal'] ?? 0 }} | 
+                                                                    Stok Tujuan: {{ $stokInfo[$detail['barang_id']]['tujuan'] ?? 0 }}
+                                                                </small>
+                                                            @endif
+                                                        </td>
                                                         <td class="text-center">
                                                             @if(count($details) > 1)
                                                                 <button type="button" wire:click="removeDetail({{ $index }})" class="btn btn-danger btn-sm">

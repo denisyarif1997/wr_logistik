@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        //
-        Schema::create('postingan', function (Blueprint $table) {
-            $table->id();
-            $table->string('judul');
-            $table->text('isi');
-            $table->timestamps();        });
+        Schema::table('penyesuaian_detail', function (Blueprint $table) {
+            $table->softDeletes();
+        });
     }
 
     /**
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::table('penyesuaian_detail', function (Blueprint $table) {
+            $table->dropSoftDeletes();
+        });
     }
 };

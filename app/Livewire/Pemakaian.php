@@ -70,8 +70,10 @@ class Pemakaian extends Component
 
         return view('livewire.pemakaian.index', [
             'pemakaians' => $pemakaians,
-            'departemens' => Departemen::all(),
-            'gudangs' => Gudang::all(),
+            // Only load the full Departemen/Gudang lists when the form modal is open,
+            // otherwise they are queried on every list render for nothing.
+            'departemens' => $this->isOpen ? Departemen::all() : collect(),
+            'gudangs' => $this->isOpen ? Gudang::all() : collect(),
             'barangResults' => $barangResults,
         ]);
     }

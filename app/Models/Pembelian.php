@@ -42,7 +42,7 @@ class Pembelian extends Model
 
     public function supplier()
     {
-        return $this->belongsTo(Suppliers::class);
+        return $this->belongsTo(Suppliers::class)->withTrashed();
     }
 
     public function ppnMaster()

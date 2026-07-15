@@ -110,6 +110,12 @@
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
+        /* Fix Bootstrap form-control-plaintext color in dark mode */
+        [data-theme="dark"] .form-control-plaintext,
+        .dark-mode .form-control-plaintext {
+            color: var(--text-dark) !important;
+        }
+
         /* Simplified background - no animation */
         body::before {
             content: '';
@@ -211,7 +217,7 @@
         }
 
         .nav-sidebar > .nav-item > .nav-link.active {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: var(--primary);
             color: #fff !important;
             font-weight: 600;
             box-shadow: 0 2px 8px rgba(0,102,255,0.3);
@@ -563,7 +569,7 @@
         <aside class="main-sidebar elevation-4">
             <a href="{{ route('admin.dashboard') }}" class="brand-link">
                 <i class="fas fa-shipping-fast mr-2"></i>
-                <span class="brand-text">MyLogistics</span>
+                <span class="brand-text">{{ config('app.name') }}</span>
             </a>
 
             <div class="sidebar">

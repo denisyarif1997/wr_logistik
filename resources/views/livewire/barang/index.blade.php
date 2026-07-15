@@ -34,6 +34,8 @@
                         <th>Stok Min</th>
                         <th>Stok Aktual</th>
                         <th>Harga Beli</th>
+                        <th>Jual?</th>
+                        <th>Margin Jual (%)</th>
                         <th>Created By</th>
                         {{-- <th>Created At</th> --}}
                         <th>Updated By</th>
@@ -51,6 +53,8 @@
                             <td>{{ $barang->stok_minimum }}</td>
                             <td>{{ $barang->stok_aktual ?? 0 }}</td>
                             <td>{{ $barang->harga_beli_terakhir }}</td>
+                            <td>{{ $barang->is_jual ? 'Yes' : 'No' }}</td>
+                            <td>{{ $barang->margin_jual !== null ? $barang->margin_jual . '%' : '-' }}</td>
                             <td>{{ $barang->creator->name ?? '-' }}</td>
                             {{-- <td>{{ $barang->created_at }}</td> --}}
                             <td>{{ $barang->updater->name ?? '-' }}</td>

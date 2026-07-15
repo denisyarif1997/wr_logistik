@@ -55,14 +55,17 @@ class TransferBarangManagement extends Component
         
         // Get stock information for each barang in selected warehouses
         $stokInfo = [];
-        if ($this->gudang_asal_id && !empty($this->details)) {
+        if (!empty($this->details)) {
             foreach ($this->details as $detail) {
                 if (!empty($detail['barang_id'])) {
-                    $stokAsal = Stok::where('barang_id', $detail['barang_id'])
-                        ->where('gudang_id', $this->gudang_asal_id)
-                        ->value('stok_akhir') ?? 0;
+                    $stokAsal = 0;
+                    if ($this->gudang_asal_id) {
+                        $stokAsal = Stok::where('barang_id', $detail['barang_id'])
+                            ->where('gudang_id', $this->gudang_asal_id)
+                            ->value('stok_akhir') ?? 0;
+                    }
                     
-                    $stokTujuan = null;
+                    $stokTujuan = 0;
                     if ($this->gudang_tujuan_id) {
                         $stokTujuan = Stok::where('barang_id', $detail['barang_id'])
                             ->where('gudang_id', $this->gudang_tujuan_id)
@@ -183,12 +186,16 @@ class TransferBarangManagement extends Component
             }
 
             DB::commit();
-            session()->flash('message', $this->isEdit ? 'Transfer berhasil diupdate' : 'Transfer berhasil disimpan');
+            $msg = $this->isEdit ? 'Transfer berhasil diupdate' : 'Transfer berhasil disimpan';
+            session()->flash('message', $msg);
+            $this->dispatch('notify', message: $msg, type: 'success');
             $this->resetForm();
             $this->showForm = false;
         } catch (\Exception $e) {
             DB::rollBack();
-            session()->flash('error', 'Gagal menyimpan transfer: ' . $e->getMessage());
+            $msg = 'Gagal menyimpan transfer: ' . $e->getMessage();
+            session()->flash('error', $msg);
+            $this->dispatch('notify', message: $msg, type: 'error');
         }
     }
 
@@ -197,7 +204,9 @@ class TransferBarangManagement extends Component
         $transfer = TransferBarang::with('details')->findOrFail($id);
         
         if ($transfer->status !== 'pending') {
-            session()->flash('error', 'Transfer sudah diproses atau dibatalkan');
+            $msg = 'Transfer sudah diproses atau dibatalkan';
+            session()->flash('error', $msg);
+            $this->dispatch('notify', message: $msg, type: 'error');
             return;
         }
 
@@ -211,7 +220,11 @@ class TransferBarangManagement extends Component
                     ->where('gudang_id', $transfer->gudang_asal_id)
                     ->first();
 
-                if (!$stokAsal || $stokAsal->stok_akhir < $detail->qty) {
+                if (!$stokAsal || $stokAsal->stok_akhir <= 0) {
+                    throw new \Exception("Stok barang {$barang->nama_barang} di gudang sumber 0");
+                }
+
+                if ($stokAsal->stok_akhir < $detail->qty) {
                     throw new \Exception("Stok tidak mencukupi untuk barang: {$barang->nama_barang}");
                 }
 
@@ -270,10 +283,14 @@ class TransferBarangManagement extends Component
             ]);
 
             DB::commit();
-            session()->flash('message', 'Transfer berhasil diproses');
+            $msg = 'Transfer berhasil diproses';
+            session()->flash('message', $msg);
+            $this->dispatch('notify', message: $msg, type: 'success');
         } catch (\Exception $e) {
             DB::rollBack();
-            session()->flash('error', 'Gagal memproses transfer: ' . $e->getMessage());
+            $msg = 'Gagal memproses transfer: ' . $e->getMessage();
+            session()->flash('error', $msg);
+            $this->dispatch('notify', message: $msg, type: 'error');
         }
     }
 
@@ -282,7 +299,9 @@ class TransferBarangManagement extends Component
         $transfer = TransferBarang::findOrFail($id);
         
         if ($transfer->status !== 'pending') {
-            session()->flash('error', 'Transfer sudah diproses atau dibatalkan');
+            $msg = 'Transfer sudah diproses atau dibatalkan';
+            session()->flash('error', $msg);
+            $this->dispatch('notify', message: $msg, type: 'error');
             return;
         }
 
@@ -291,7 +310,9 @@ class TransferBarangManagement extends Component
             'updated_user' => auth()->id(),
         ]);
 
-        session()->flash('message', 'Transfer berhasil dibatalkan');
+        $msg = 'Transfer berhasil dibatalkan';
+        session()->flash('message', $msg);
+        $this->dispatch('notify', message: $msg, type: 'success');
     }
 
     public function resetForm()

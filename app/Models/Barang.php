@@ -14,10 +14,14 @@ class Barang extends Model
 
     protected $fillable = [
         'kode_barang',
+        'barcode',
         'nama_barang',
         'satuan',
         'stok_minimum',
         'harga_beli_terakhir',
+        'harga_jual',
+        'is_jual',
+        'margin_jual',
         'inserted_user',
         'updated_user',
         'created_at',

@@ -78,6 +78,15 @@ class PermissionSeeder extends Seeder
             'pemakaian-create',
             'pemakaian-edit',
             'pemakaian-delete',
+            'penyesuaian',
+            'penyesuaian-view',
+            'penyesuaian-create',
+            'penyesuaian-edit',
+            'penyesuaian-delete',
+            'penyesuaian-approve',
+            'kasir',
+            'kasir-view',
+            'kasir-create',
             
             // Laporan
             'laporan',

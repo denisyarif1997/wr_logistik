@@ -41,13 +41,13 @@
                         <th>No PO</th>
                         <th>Tanggal PO</th>
                         <th>Supplier</th>
-                        <th>Status</th>
-                        <th>Dibuat Oleh</th>
-                        <th>Dibuat Pada</th>
-                        <th>Diperbarui Oleh</th>
-                        <th>Diperbarui Pada</th>
+                        <!-- <th>Status</th> -->
+                        <th>Created By</th>
+                        <!-- <th>Created At</th> -->
+                        <th>Updated By</th>
+                        <!-- <th>Updated At</th> -->
                         <th>Action</th>
-                        <th>Validasi Pembelian</th>
+                        <th>Validasi Po</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,11 +57,11 @@
                             <td>{{ $pembelian->no_po }}</td>
                             <td>{{ $pembelian->tanggal_po }}</td>
                             <td>{{ $pembelian->supplier->nama_supplier ?? 'N/A' }}</td>
-                            <td>{{ $pembelian->status }}</td>
+                            <!-- <td>{{ $pembelian->status }}</td> -->
                             <td>{{ $pembelian->creator->name ?? '-' }}</td>
-                            <td>{{ $pembelian->created_at }}</td>
+                            <!-- <td>{{ $pembelian->created_at }}</td> -->
                             <td>{{ $pembelian->updater->name ?? '-' }}</td>
-                            <td>{{ $pembelian->updated_at }}</td>
+                            <!-- <td>{{ $pembelian->updated_at }}</td> -->
                             {{-- <td>{{ $pembelian->deleter->name ?? '-' }}</td> --}}
 
                             <td>

@@ -32,7 +32,7 @@
                     <div class="form-group position-relative">
                         <label for="supplier_id">Supplier</label>
                         @if($isShow)
-                            <span class="form-control-plaintext">{{ $supplierSearch }}</span>
+                            <input type="text" class="form-control" value="{{ $supplierSearch ?: '-' }}" readonly>
                         @else
                             <input type="text" class="form-control" placeholder="Cari Supplier..." 
                                    wire:model.live="supplierSearch" autocomplete="off">
@@ -55,13 +55,29 @@
                 <div class="col-md-4">
                     <div class="form-group">
                         <label for="status">Status</label>
-                        <select class="form-control" id="status" wire:model.lazy="status" @if($isShow) disabled @endif>
-                            <option value="draft">Draft</option>
-                            @if($pembelian_id)
-                                <option value="approved">Approved</option>
-                                <option value="canceled">Canceled</option>
-                            @endif
-                        </select>
+                        @if($isShow)
+                            <div>
+                                @php
+                                    $statusBadge = match($status) {
+                                        'draft' => 'badge-secondary',
+                                        'approved' => 'badge-success',
+                                        'canceled' => 'badge-danger',
+                                        default => 'badge-light',
+                                    };
+                                @endphp
+                                <span class="badge {{ $statusBadge }} p-2" style="font-size: 0.9rem;">
+                                    {{ ucfirst($status) }}
+                                </span>
+                            </div>
+                        @else
+                            <select class="form-control" id="status" wire:model.lazy="status">
+                                <option value="draft">Draft</option>
+                                @if($pembelian_id)
+                                    <option value="approved">Approved</option>
+                                    <option value="canceled">Canceled</option>
+                                @endif
+                            </select>
+                        @endif
                         @error('status') <span class="text-danger">{{ $message }}</span>@enderror
                     </div>
                 </div>

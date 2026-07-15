@@ -62,7 +62,9 @@ class Penerimaan extends Component
 
     public function render()
     {
-        $penerimaans = ModelsPenerimaan::with(['pembelian.supplier', 'gudang'])
+        // Eager load details & pembayaran to avoid N+1 in the index view
+        // (calculated_total accesses $this->details, and the view reads $penerimaan->pembayaran per row)
+        $penerimaans = ModelsPenerimaan::with(['pembelian.supplier', 'gudang', 'details', 'pembayaran'])
             ->where(function ($query) {
                 $query->whereRaw('LOWER(no_penerimaan) LIKE ?', ['%' . strtolower($this->search) . '%'])
                     ->orWhereHas('pembelian.supplier', function ($q) {
@@ -73,10 +75,11 @@ class Penerimaan extends Component
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        // Optimized PO fetching
+        // Optimized PO fetching (eager load supplier to avoid N+1 in the dropdown)
         $pembelians = [];
         if (strlen($this->poSearch) >= 2) {
-            $pembelians = Pembelian::where('status', 'approved')
+            $pembelians = Pembelian::with('supplier')
+                ->where('status', 'approved')
                 ->whereDoesntHave('penerimaan')
                 ->where(function($q) {
                     $q->whereRaw('LOWER(no_po) LIKE ?', ['%' . strtolower($this->poSearch) . '%'])
@@ -91,11 +94,13 @@ class Penerimaan extends Component
                 $pembelians = [];
             }
         } elseif ($this->pembelian_id) {
-            $pembelians = Pembelian::where('id', $this->pembelian_id)->get();
+            $pembelians = Pembelian::with('supplier')->where('id', $this->pembelian_id)->get();
         }
 
-        $barangs = Barang::all();
-        $gudangs = Gudang::all();
+        // Only load the full Barang/Gudang lists when the form modal is actually open,
+        // otherwise they are queried on every list render for nothing.
+        $barangs = $this->isOpen ? Barang::all() : collect();
+        $gudangs = $this->isOpen ? Gudang::all() : collect();
         
         // Get active PPN masters for dropdown
         $ppnMasters = Ppn::active()->orderBy('rate', 'asc')->get();

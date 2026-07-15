@@ -15,7 +15,7 @@ class Barang extends Component
 
     protected $paginationTheme = 'bootstrap';
 
-    public $kode_barang, $nama_barang, $satuan, $stok_minimum, $harga_beli_terakhir;
+    public $kode_barang, $nama_barang, $satuan, $stok_minimum, $harga_beli_terakhir, $is_jual = false, $margin_jual;
     public $barang_id;
     public $isOpen = false;
     public $search = '';
@@ -31,6 +31,8 @@ class Barang extends Component
         'satuan' => 'required',
         'stok_minimum' => 'required|numeric',
         'harga_beli_terakhir' => 'required|numeric',
+        'is_jual' => 'boolean',
+        'margin_jual' => 'nullable|numeric|min:0',
     ];
 
     public function render()
@@ -91,6 +93,8 @@ class Barang extends Component
         $this->satuan = '';
         $this->stok_minimum = '';
         $this->harga_beli_terakhir = '';
+        $this->is_jual = false;
+        $this->margin_jual = '';
     }
 
     public function edit($id)
@@ -103,6 +107,8 @@ class Barang extends Component
         $this->satuan = $barang->satuan;
         $this->stok_minimum = $barang->stok_minimum;
         $this->harga_beli_terakhir = $barang->harga_beli_terakhir;
+        $this->is_jual = $barang->is_jual;
+        $this->margin_jual = $barang->margin_jual;
 
         $this->openModal();
     }
@@ -123,6 +129,8 @@ class Barang extends Component
                 'satuan' => $this->satuan,
                 'stok_minimum' => $this->stok_minimum,
                 'harga_beli_terakhir' => $this->harga_beli_terakhir,
+                'is_jual' => $this->is_jual,
+                'margin_jual' => $this->margin_jual,
                 'updated_user' => $userId,
             ]
         );

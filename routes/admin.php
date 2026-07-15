@@ -113,6 +113,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
             return view('admin.pemakaian.index');
         })->name('pemakaian.index');
     });
+
+    Route::middleware(['can:penyesuaian'])->group(function(){
+        Route::get('/penyesuaian', function () {
+            return view('admin.penyesuaian.index');
+        })->name('penyesuaian.index');
+    });
+
+    Route::middleware(['can:kasir'])->group(function(){
+        Route::get('/kasir', function () {
+            return view('admin.kasir.index');
+        })->name('kasir.index');
+        Route::get('/kasir/{id}/print', [App\Http\Controllers\KasirController::class, 'print'])->name('kasir.print');
+        Route::get('/penjualan', function () {
+            return view('admin.penjualan.index');
+        })->name('penjualan.index');
+    });
     
     Route::middleware(['can:transfer'])->group(function(){
         Route::get('/transfer-barang', \App\Livewire\TransferBarangManagement::class)->name('transfer.index');

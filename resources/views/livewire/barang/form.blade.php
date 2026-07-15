@@ -35,6 +35,15 @@
                 <input type="number" class="form-control" id="harga_beli_terakhir" placeholder="Enter Harga Beli Terakhir" wire:model="harga_beli_terakhir">
                 @error('harga_beli_terakhir') <span class="text-danger">{{ $message }}</span>@enderror
             </div>
+            <div class="form-group">
+                <label for="is_jual">Jualable?</label>
+                <input type="checkbox" id="is_jual" wire:model="is_jual">
+            </div>
+            <div class="form-group">
+                <label for="margin_jual">Margin Jual (%)</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="margin_jual" placeholder="Enter margin percentage" wire:model="margin_jual">
+                @error('margin_jual') <span class="text-danger">{{ $message }}</span>@enderror
+            </div>
             <button type="submit" class="btn btn-primary">{{ $barang_id ? 'Update' : 'Save' }}</button>
             <button wire:click="closeModal()" type="button" class="btn btn-secondary">Cancel</button>
         </form>
