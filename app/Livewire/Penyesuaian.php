@@ -10,6 +10,7 @@ use App\Models\Stok;
 use App\Models\KartuStok;
 use App\Models\Jurnal;
 use App\Models\JurnalDetail;
+use App\Models\PenerimaanDetail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -354,6 +355,7 @@ class Penyesuaian extends Component
                 $penyesuaian->updated_user = auth()->id();
                 $penyesuaian->save();
 
+                $this->updateHppForAllBarang();
                 $this->createJurnalPenyesuaian($penyesuaian, $jenisLabel);
             });
 
@@ -419,15 +421,15 @@ class Penyesuaian extends Component
 
     /**
      * Buat jurnal saat penyesuaian di-approve.
-     * Barang keluar dari persediaan -> Debit Beban (4003), Kredit Persediaan Barang (1201).
+     * Barang keluar dari persediaan -> Debit Beban, Kredit Persediaan Barang.
      */
     private function createJurnalPenyesuaian($penyesuaian, $jenisLabel)
     {
         $totalNilai = 0;
         foreach ($penyesuaian->details as $detail) {
             $barang = Barang::find($detail->barang_id);
-            if ($barang && $barang->harga_beli_terakhir) {
-                $totalNilai += $barang->harga_beli_terakhir * $detail->qty;
+            if ($barang && $barang->hpp) {
+                $totalNilai += $barang->hpp * $detail->qty;
             }
         }
 
@@ -441,19 +443,76 @@ class Penyesuaian extends Component
                 'inserted_user' => auth()->id(),
             ]);
 
-            // Debit: Beban Pemakaian Barang (akun id 9)
+            // Get COA from settings
+            $coaPersediaan = \App\Models\Setting::getValue('coa_persediaan', 4);
+            $coaBeban = \App\Models\Setting::getValue('coa_beban_operasional', 9);
+            
+            $akunPersediaan = \App\Models\Akun::find($coaPersediaan);
+            $akunBeban = \App\Models\Akun::find($coaBeban);
+
+            // Debit: Beban Pemakaian Barang
             $jurnal->details()->create([
-                'akun_id' => 9,
+                'akun_id' => $coaBeban,
+                'nama_akun' => $akunBeban ? $akunBeban->nama_akun : 'Beban Operasional',
                 'debit' => $totalNilai,
                 'kredit' => 0,
             ]);
 
-            // Kredit: Persediaan Barang (akun id 4)
+            // Kredit: Persediaan Barang
             $jurnal->details()->create([
-                'akun_id' => 4,
+                'akun_id' => $coaPersediaan,
+                'nama_akun' => $akunPersediaan ? $akunPersediaan->nama_akun : 'Persediaan Barang',
                 'debit' => 0,
                 'kredit' => $totalNilai,
             ]);
+        }
+    }
+
+    /**
+     * Update HPP (Harga Pokok Penjualan) for all barang based on current stock
+     * HPP is calculated as weighted average price from all stock movements
+     */
+    private function updateHppForAllBarang()
+    {
+        // Get all barang
+        $barangs = Barang::all();
+        
+        foreach ($barangs as $barang) {
+            // Get all stock entries for this barang to calculate total quantity
+            $totalQty = Stok::where('barang_id', $barang->id)->sum('stok_akhir');
+            
+            if ($totalQty <= 0) {
+                continue;
+            }
+            
+            // Calculate weighted average price from all incoming stock movements
+            $kartuStokMasuk = KartuStok::where('barang_id', $barang->id)
+                ->where('jenis_transaksi', 'masuk')
+                ->where('referensi_tipe', 'Penerimaan')
+                ->get();
+            
+            $totalQtyForAvg = 0;
+            $totalValueForAvg = 0;
+            
+            foreach ($kartuStokMasuk as $kartu) {
+                // Get the penerimaan detail to find the purchase price
+                $penerimaanDetail = PenerimaanDetail::where('penerimaan_id', $kartu->referensi_id)
+                    ->where('barang_id', $barang->id)
+                    ->first();
+                
+                if ($penerimaanDetail) {
+                    $harga = $penerimaanDetail->harga_satuan;
+                    $qty = $kartu->qty_masuk;
+                    $totalQtyForAvg += $qty;
+                    $totalValueForAvg += $harga * $qty;
+                }
+            }
+            
+            if ($totalQtyForAvg > 0) {
+                $hpp = $totalValueForAvg / $totalQtyForAvg;
+                $barang->hpp = round($hpp, 2);
+                $barang->save();
+            }
         }
     }
 }

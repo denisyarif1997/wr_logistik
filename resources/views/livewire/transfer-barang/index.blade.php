@@ -140,6 +140,7 @@
                                     @error('details') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                                 </div>
                             </div>
+                            
 
                             <!-- Buttons -->
                             <div class="row mt-3">
@@ -185,6 +186,8 @@
                             <th>Gudang Asal</th>
                             <th>Gudang Tujuan</th>
                             <th class="text-center">Status</th>
+                            <th>Di ajukan</th>
+                            <th>Di Proses</th>
                             <th class="text-center" style="width: 15%">Aksi</th>
                         </tr>
                     </thead>
@@ -208,6 +211,8 @@
                                         {{ $transfer->status_label }}
                                     </span>
                                 </td>
+                                <td>{{ $transfer->creator->name ?? '-' }}</td>
+                                <td>{{ $transfer->updater->name ?? '-' }}</td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
                                         <button wire:click="edit({{ $transfer->id }})" class="btn btn-warning" title="Edit">

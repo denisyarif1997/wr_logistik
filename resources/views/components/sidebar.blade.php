@@ -49,10 +49,10 @@
             </li>
         @endcanany
 
-        @canany(['barang', 'supplier', 'gudang', 'satuan', 'departemen', 'coa', 'ppn'])
+        @canany(['barang', 'supplier', 'gudang', 'satuan', 'departemen', 'coa', 'ppn', 'pengaturan'])
             <!-- MASTER DATA -->
-            <li class="nav-item has-treeview {{ Route::is('admin.barang.*') || Route::is('admin.suppliers.*') || Route::is('admin.gudang.*') ||Route::is('admin.satuan.*') || Route::is('admin.departemen.*') || Route::is('admin.akun.*') || Route::is('admin.ppn.*') ? 'menu-open' : '' }}">
-                <a href="#" class="nav-link {{ Route::is('admin.barang.*') || Route::is('admin.suppliers.*') || Route::is('admin.gudang.*') || Route::is('admin.satuan.*') || Route::is('admin.departemen.*') || Route::is('admin.akun.*') || Route::is('admin.ppn.*') ? 'active' : '' }}">
+            <li class="nav-item has-treeview {{ Route::is('admin.barang.*') || Route::is('admin.suppliers.*') || Route::is('admin.gudang.*') ||Route::is('admin.satuan.*') || Route::is('admin.departemen.*') || Route::is('admin.akun.*') || Route::is('admin.ppn.*') || Route::is('admin.pengaturan.*') ? 'menu-open' : '' }}">
+                <a href="#" class="nav-link {{ Route::is('admin.barang.*') || Route::is('admin.suppliers.*') || Route::is('admin.gudang.*') || Route::is('admin.satuan.*') || Route::is('admin.departemen.*') || Route::is('admin.akun.*') || Route::is('admin.ppn.*') || Route::is('admin.pengaturan.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-database"></i>
                     <p>
                         Master Data
@@ -113,6 +113,14 @@
                         <a href="{{ route('admin.ppn.index') }}" class="nav-link {{ Route::is('admin.ppn.index') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-percent"></i>
                             <p>PPN</p>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('pengaturan')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.pengaturan.index') }}" class="nav-link {{ Route::is('admin.pengaturan.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-cog"></i>
+                            <p>Pengaturan COA</p>
                         </a>
                     </li>
                     @endcan
@@ -201,10 +209,10 @@
             </li>
         @endcanany
 
-        @canany(['stok', 'jurnal', 'buku_besar'])
+        @canany(['stok', 'jurnal', 'buku_besar', 'laba_rugi', 'neraca', 'hutang_supplier', 'stock_opname'])
             <!-- LAPORAN -->
-            <li class="nav-item has-treeview {{ Route::is('admin.stok.*') || Route::is('admin.jurnal.*') || Route::is('admin.buku-besar.*') ? 'menu-open' : '' }}">
-                <a href="#" class="nav-link {{ Route::is('admin.stok.*') || Route::is('admin.jurnal.*') || Route::is('admin.buku-besar.*') ? 'active' : '' }}">
+            <li class="nav-item has-treeview {{ Route::is('admin.stok.*') || Route::is('admin.jurnal.*') || Route::is('admin.buku-besar.*') || Route::is('admin.laba-rugi.*') || Route::is('admin.neraca.*') || Route::is('admin.hutang-supplier.*') || Route::is('admin.stock-opname.*') ? 'menu-open' : '' }}">
+                <a href="#" class="nav-link {{ Route::is('admin.stok.*') || Route::is('admin.jurnal.*') || Route::is('admin.buku-besar.*') || Route::is('admin.laba-rugi.*') || Route::is('admin.neraca.*') || Route::is('admin.hutang-supplier.*') || Route::is('admin.stock-opname.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-file-alt"></i>
                     <p>
                         Laporan
@@ -233,6 +241,46 @@
                         <a href="{{ route('admin.buku-besar.index') }}" class="nav-link {{ Route::is('admin.buku-besar.index') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-book-open"></i>
                             <p>Buku Besar</p>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('laba_rugi')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.laba-rugi.index') }}" class="nav-link {{ Route::is('admin.laba-rugi.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-chart-line"></i>
+                            <p>Laba Rugi</p>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('neraca')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.neraca.index') }}" class="nav-link {{ Route::is('admin.neraca.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-balance-scale"></i>
+                            <p>Neraca</p>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('hutang_supplier')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.hutang-supplier.index') }}" class="nav-link {{ Route::is('admin.hutang-supplier.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>Hutang Supplier</p>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('stock_opname')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.stock-opname.index') }}" class="nav-link {{ Route::is('admin.stock-opname.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-clipboard-check"></i>
+                            <p>Stock Opname</p>
+                        </a>
+                    </li>
+                    @endcan
+                    @can('stock_opname')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.laporan-stock-opname.index') }}" class="nav-link {{ Route::is('admin.laporan-stock-opname.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-file-alt"></i>
+                            <p>Laporan Stock Opname</p>
                         </a>
                     </li>
                     @endcan

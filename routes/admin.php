@@ -142,6 +142,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
             return view('admin.stok.index');
         })->name('stok.index');
     });
+
+    Route::middleware(['can:stock_opname'])->group(function(){
+        Route::get('/stock-opname', \App\Livewire\StockOpname::class)->name('stock-opname.index');
+        Route::get('/laporan-stock-opname', \App\Livewire\LaporanStockOpname::class)->name('laporan-stock-opname.index');
+    });
     
     Route::middleware(['can:jurnal'])->group(function(){
         Route::get('/jurnal', function () {
@@ -153,5 +158,21 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
         Route::get('/buku-besar', function () {
             return view('admin.buku-besar.index');
         })->name('buku-besar.index');
+    });
+
+    Route::middleware(['can:laba_rugi'])->group(function(){
+        Route::get('/laba-rugi', \App\Livewire\LabaRugi::class)->name('laba-rugi.index');
+    });
+
+    Route::middleware(['can:neraca'])->group(function(){
+        Route::get('/neraca', \App\Livewire\Neraca::class)->name('neraca.index');
+    });
+
+    Route::middleware(['can:hutang_supplier'])->group(function(){
+        Route::get('/hutang-supplier', \App\Livewire\HutangSupplier::class)->name('hutang-supplier.index');
+    });
+
+    Route::middleware(['can:coa'])->group(function(){
+        Route::get('/pengaturan', \App\Livewire\Pengaturan::class)->name('pengaturan.index');
     });
 });

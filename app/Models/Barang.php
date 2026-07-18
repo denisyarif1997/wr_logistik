@@ -19,7 +19,7 @@ class Barang extends Model
         'satuan',
         'stok_minimum',
         'harga_beli_terakhir',
-        'harga_jual',
+        'hpp',
         'is_jual',
         'margin_jual',
         'inserted_user',

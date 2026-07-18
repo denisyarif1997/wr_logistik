@@ -16,7 +16,7 @@ class Barang extends Component
 
     protected $paginationTheme = 'bootstrap';
 
-    public $kode_barang, $nama_barang,$barcode, $satuan, $stok_minimum, $harga_beli_terakhir, $is_jual = false, $margin_jual;
+    public $kode_barang, $nama_barang,$barcode,$hpp, $satuan, $stok_minimum, $harga_beli_terakhir, $is_jual = false, $margin_jual;
     public $barang_id;
     public $isOpen = false;
     public $search = '';
@@ -110,6 +110,7 @@ class Barang extends Component
         $this->satuan = $barang->satuan;
         $this->stok_minimum = $barang->stok_minimum;
         $this->harga_beli_terakhir = $barang->harga_beli_terakhir;
+        $this->hpp = $barang->hpp;
         $this->is_jual = $barang->is_jual;
         $this->margin_jual = $barang->margin_jual;
 

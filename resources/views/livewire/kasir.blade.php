@@ -8,13 +8,20 @@
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
+                        @if($isView)
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> Mode Lihat - Penjualan sudah diproses, tidak dapat diubah.
+                                </div>
+                            </div>
+                        @endif
                         <div class="col-md-3">
                             <label>Tanggal</label>
-                            <input type="date" class="form-control" wire:model="tanggal">
+                            <input type="date" class="form-control" wire:model="tanggal" {{ $isView ? 'readonly disabled' : '' }}>
                         </div>
                         <div class="col-md-3">
                             <label>Gudang</label>
-                            <select class="form-control" wire:model="gudang_id">
+                            <select class="form-control" wire:model="gudang_id" {{ $isView ? 'disabled' : '' }}>
                                 @foreach($gudangs as $g)
                                     <option value="{{ $g->id }}">{{ $g->nama_gudang }}</option>
                                 @endforeach
@@ -22,7 +29,7 @@
                         </div>
                         <div class="col-md-3">
                             <label>Kas / Bank</label>
-                            <select class="form-control" wire:model="kas_id">
+                            <select class="form-control" wire:model="kas_id" {{ $isView ? 'disabled' : '' }}>
                                 @foreach($kasAccounts as $k)
                                     <option value="{{ $k->id }}">{{ $k->kode_akun }} - {{ $k->nama_akun }}</option>
                                 @endforeach
@@ -30,10 +37,11 @@
                         </div>
                         <div class="col-md-3">
                             <label>Keterangan (Opsional)</label>
-                            <input type="text" class="form-control" wire:model="keterangan" placeholder="Catatan penjualan...">
+                            <input type="text" class="form-control" wire:model="keterangan" placeholder="Catatan penjualan..." {{ $isView ? 'readonly disabled' : '' }}>
                         </div>
                     </div>
 
+                    @if(!$isView)
                     <hr>
 
                     {{-- SCANNER BARCODE --}}
@@ -96,6 +104,7 @@
                     </div>
 
                     <hr>
+                    @endif
 
                     {{-- CART --}}
                     <h5>Item Keranjang</h5>
@@ -124,19 +133,29 @@
                                         </td>
                                         <td>Rp {{ number_format($item['harga'],0,',','.') }}</td>
                                         <td>
-                                            <input type="number" min="1" class="form-control form-control-sm"
-                                                   value="{{ $item['qty'] }}"
-                                                   wire:change="updateQty({{ $key }}, $event.target.value)">
+                                            @if($isView)
+                                                {{ $item['qty'] }}
+                                            @else
+                                                <input type="number" min="1" class="form-control form-control-sm"
+                                                       value="{{ $item['qty'] }}"
+                                                       wire:change="updateQty({{ $key }}, $event.target.value)">
+                                            @endif
                                             <small class="text-muted">Stok: {{ $item['stok'] }}</small>
                                         </td>
                                         <td>
-                                            <input type="number" min="0" max="100" step="0.1" class="form-control form-control-sm"
-                                                   value="{{ $item['diskon_persen'] ?? 0 }}"
-                                                   wire:change="updateDiskonItem({{ $key }}, $event.target.value)">
+                                            @if($isView)
+                                                {{ $item['diskon_persen'] ?? 0 }}%
+                                            @else
+                                                <input type="number" min="0" max="100" step="0.1" class="form-control form-control-sm"
+                                                       value="{{ $item['diskon_persen'] ?? 0 }}"
+                                                       wire:change="updateDiskonItem({{ $key }}, $event.target.value)">
+                                            @endif
                                         </td>
                                         <td>Rp {{ number_format($item['subtotal'],0,',','.') }}</td>
                                         <td>
-                                            <button class="btn btn-danger btn-sm" wire:click="removeItem({{ $key }})">X</button>
+                                            @if(!$isView)
+                                                <button class="btn btn-danger btn-sm" wire:click="removeItem({{ $key }})">X</button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
@@ -157,13 +176,13 @@
                     {{-- Diskon Global --}}
                     <div class="form-group">
                         <label>Diskon Global (%)</label>
-                        <input type="number" min="0" max="100" step="0.1" class="form-control" wire:model.lazy="diskon" placeholder="0">
+                        <input type="number" min="0" max="100" step="0.1" class="form-control" wire:model.lazy="diskon" placeholder="0" {{ $isView ? 'readonly disabled' : '' }}>
                     </div>
 
                     {{-- PPN --}}
                     <div class="form-group">
                         <label>PPN</label>
-                        <select class="form-control" wire:model="ppn_id">
+                        <select class="form-control" wire:model="ppn_id" {{ $isView ? 'disabled' : '' }}>
                             <option value="">Tanpa PPN</option>
                             @foreach($ppnMasters as $p)
                                 <option value="{{ $p->id }}">{{ $p->kode_ppn ?? 'PPN' }} - {{ $p->rate }}%</option>
@@ -198,7 +217,7 @@
                         <label>Uang Bayar</label>
                         <div class="input-group">
                             <div class="input-group-prepend"><span class="input-group-text">Rp</span></div>
-                            <input type="number" min="0" class="form-control" wire:model.lazy="bayar" placeholder="0">
+                            <input type="number" min="0" class="form-control" wire:model.lazy="bayar" placeholder="0" {{ $isView ? 'readonly disabled' : '' }}>
                         </div>
                     </div>
 
@@ -207,11 +226,17 @@
                         <strong class="text-success">Rp {{ number_format($kembalian,0,',','.') }}</strong>
                     </div>
 
-                    <button class="btn btn-success btn-block btn-lg" wire:click="bayarSekarang"
-                            {{ count($cart) == 0 ? 'disabled' : '' }}>
-                        <i class="fas fa-cash-register"></i> BAYAR & SIMPAN
-                    </button>
-                    <button class="btn btn-default btn-block mt-2" wire:click="clearCart">Bersihkan</button>
+                    @if(!$isView)
+                        <button class="btn btn-success btn-block btn-lg" wire:click="bayarSekarang"
+                                {{ count($cart) == 0 ? 'disabled' : '' }}>
+                            <i class="fas fa-cash-register"></i> BAYAR & SIMPAN
+                        </button>
+                        <button class="btn btn-default btn-block mt-2" wire:click="clearCart">Bersihkan</button>
+                    @else
+                        <a href="{{ route('admin.kasir.print', $viewPenjualan->id) }}" target="_blank" class="btn btn-primary btn-block btn-lg">
+                            <i class="fas fa-print"></i> Cetak Billing
+                        </a>
+                    @endif
                 </div>
             </div>
 

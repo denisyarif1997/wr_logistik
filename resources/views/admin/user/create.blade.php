@@ -27,7 +27,7 @@
                     </div>
                     <div class="col-lg-6">
                         <div class="form-group">
-                            <label for="Password" class="form-label">Password:*</label>
+                            <label for="Password" class="form-label">Password 8 character:*</label>
                             <input type="password" class="form-control" name="password" required>
                             <x-error>password</x-error>
                         </div>

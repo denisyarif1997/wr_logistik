@@ -79,8 +79,16 @@
 
             <hr>
 
-            <h4 class="mb-3">Detail Barang Diterima</h4>
-            @if(count($details) > 0)
+                    <h4 class="mb-3">Detail Barang Diterima</h4>
+                    @if(!$isShow && !$pembelian_id)
+                        <button type="button" class="btn btn-sm btn-success mb-2" wire:click="addDetail">
+                            <i class="fas fa-plus"></i> Tambah Barang
+                        </button>
+                    @endif
+                    @if(!$isShow && $pembelian_id)
+                        <small class="text-muted">Barang diambil dari PO yang dipilih.</small>
+                    @endif
+                    @if(count($details) > 0)
                 <table class="table table-bordered table-striped">
                     <thead>
                         <tr>
@@ -91,6 +99,7 @@
                             <th>Diskon (@)</th>
                             <th>PPN (%)</th>
                             <th>Subtotal</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -146,12 +155,19 @@
                                 <td>
                                     <input type="text" class="form-control text-right" value="Rp {{ number_format($detail['subtotal'], 0, ',', '.') }}" readonly>
                                 </td>
+                                @if(!$isShow)
+                                <td>
+                                    <button type="button" class="btn btn-danger btn-sm" wire:click="removeDetail({{ $index }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                                @endif
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="6" class="text-right"><strong>Subtotal:</strong></td>
+                            <td colspan="7" class="text-right"><strong>Subtotal:</strong></td>
                             <td>
                                 <div class="input-group">
                                     <div class="input-group-prepend">
@@ -163,7 +179,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="6" class="text-right"><strong>Diskon (Global):</strong></td>
+                            <td colspan="7" class="text-right"><strong>Diskon (Global):</strong></td>
                             <td>
                                 <div class="input-group">
                                     <input type="number" wire:model.live="diskon" class="form-control text-right" min="0" max="100" @if($isShow) readonly @endif>
@@ -174,7 +190,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="6" class="text-right"><strong>PPN (Global):</strong></td>
+                            <td colspan="7" class="text-right"><strong>PPN (Global):</strong></td>
                             <td>
                                 <div class="input-group">
                                     <input type="number" wire:model.live="ppn" class="form-control text-right" min="0" @if($isShow) readonly @endif>
@@ -201,13 +217,13 @@
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="6" class="text-right"><strong>Biaya Lain-lain:</strong></td>
+                            <td colspan="7" class="text-right"><strong>Biaya Lain-lain:</strong></td>
                             <td>
                                 <input type="number" wire:model.live="biaya_lain" class="form-control text-right" min="0" @if($isShow) readonly @endif>
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="6" class="text-right"><strong>Total Nilai Penerimaan:</strong></td>
+                            <td colspan="7" class="text-right"><strong>Total Nilai Penerimaan:</strong></td>
                             <td>
                                 <div class="input-group">
                                     <div class="input-group-prepend">
@@ -223,7 +239,7 @@
 
             @else
                 <div class="alert alert-info">
-                    Silakan pilih No. Pembelian untuk melihat detail barang.
+                    Silakan pilih No. Pembelian atau klik tombol "Tambah Barang" untuk menambahkan barang secara manual.
                 </div>
             @endif
 

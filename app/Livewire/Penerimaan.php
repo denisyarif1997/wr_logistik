@@ -11,6 +11,7 @@ use App\Models\Akun;
 use App\Models\JurnalDetail;
 use App\Models\Stok;
 use App\Models\Ppn;
+use App\Models\KartuStok;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -47,7 +48,7 @@ class Penerimaan extends Component
     protected $rules = [
         'no_penerimaan' => 'required|unique:penerimaan,no_penerimaan',
         'tanggal_terima' => 'required|date',
-        'pembelian_id' => 'required|exists:pembelian,id',
+        'pembelian_id' => 'nullable|exists:pembelian,id',
         'gudang_id' => 'required|exists:gudang,id',
         'diterima_oleh' => 'required',
         'details.*.barang_id' => 'required|exists:barang,id',
@@ -76,26 +77,26 @@ class Penerimaan extends Component
             ->paginate(10);
 
         // Optimized PO fetching (eager load supplier to avoid N+1 in the dropdown)
-        $pembelians = [];
-        if (strlen($this->poSearch) >= 2) {
-            $pembelians = Pembelian::with('supplier')
-                ->where('status', 'approved')
-                ->whereDoesntHave('penerimaan')
-                ->where(function($q) {
-                    $q->whereRaw('LOWER(no_po) LIKE ?', ['%' . strtolower($this->poSearch) . '%'])
-                      ->orWhereHas('supplier', function($sq) {
-                          $sq->whereRaw('LOWER(nama_supplier) LIKE ?', ['%' . strtolower($this->poSearch) . '%']);
-                      });
-                })
-                ->limit(10)->get();
-            
-            // If already selected, hide dropdown
-            if (count($pembelians) == 1 && $pembelians[0]->id == $this->pembelian_id && $pembelians[0]->no_po == $this->poSearch) {
-                $pembelians = [];
-            }
-        } elseif ($this->pembelian_id) {
-            $pembelians = Pembelian::with('supplier')->where('id', $this->pembelian_id)->get();
+    // Allow selecting POs that already have penerimaan (for penerimaan ulang)
+    $pembelians = [];
+    if (strlen($this->poSearch) >= 2) {
+        $pembelians = Pembelian::with('supplier')
+            ->where('status', 'approved')
+            ->where(function($q) {
+                $q->whereRaw('LOWER(no_po) LIKE ?', ['%' . strtolower($this->poSearch) . '%'])
+                  ->orWhereHas('supplier', function($sq) {
+                      $sq->whereRaw('LOWER(nama_supplier) LIKE ?', ['%' . strtolower($this->poSearch) . '%']);
+                  });
+            })
+            ->limit(10)->get();
+        
+        // If already selected, hide dropdown
+        if (count($pembelians) == 1 && $pembelians[0]->id == $this->pembelian_id && $pembelians[0]->no_po == $this->poSearch) {
+            $pembelians = [];
         }
+    } elseif ($this->pembelian_id) {
+        $pembelians = Pembelian::with('supplier')->where('id', $this->pembelian_id)->get();
+    }
 
         // Only load the full Barang/Gudang lists when the form modal is actually open,
         // otherwise they are queried on every list render for nothing.
@@ -130,7 +131,7 @@ class Penerimaan extends Component
     public function updatedPembelianId($value)
     {
         if ($value) {
-            $pembelian = Pembelian::with(['details.barang'])->find($value);
+            $pembelian = Pembelian::with(['details.barang', 'penerimaan.details'])->find($value);
             if ($pembelian) {
                 // Initialize from PO
                 $this->ppn = $pembelian->ppn;
@@ -149,14 +150,26 @@ class Penerimaan extends Component
                     $this->ppn_rate = 0;
                 }
 
-                $this->details = $pembelian->details->map(function ($detail) {
+                // Get already received quantities for penerimaan ulang
+                $receivedQty = [];
+                if ($pembelian->penerimaan) {
+                    foreach ($pembelian->penerimaan->details as $penerimaanDetail) {
+                        $receivedQty[$penerimaanDetail->barang_id] = ($receivedQty[$penerimaanDetail->barang_id] ?? 0) + $penerimaanDetail->qty_diterima;
+                    }
+                }
+
+                $this->details = $pembelian->details->map(function ($detail) use ($receivedQty) {
                     $qty = $detail->qty;
                     $harga = $detail->harga_satuan;
                     $diskon_persen = $detail->diskon ?? 0; // percentage
                     $ppn_rate = $detail->ppn ?? 0; // percentage
                     
+                    // Calculate remaining quantity for penerimaan ulang
+                    $qtySudahDiterima = $receivedQty[$detail->barang_id] ?? 0;
+                    $qtySisa = max(0, $qty - $qtySudahDiterima);
+                    
                     // Calculate with percentage discount
-                    $total_harga = $qty * $harga;
+                    $total_harga = $qtySisa * $harga;
                     $diskon_amount = $total_harga * ($diskon_persen / 100);
                     $dpp = $total_harga - $diskon_amount;
                     $ppn_amount = $dpp * ($ppn_rate / 100);
@@ -166,7 +179,7 @@ class Penerimaan extends Component
                         'barang_id' => $detail->barang_id,
                         'nama_barang' => $detail->barang->nama_barang ?? 'Unknown',
                         'qty_po' => $qty,
-                        'qty_diterima' => $qty, // Default to full receipt
+                        'qty_diterima' => $qtySisa, // Default to remaining quantity
                         'harga_satuan' => $harga,
                         'diskon' => $diskon_persen, 
                         'ppn' => $ppn_rate,
@@ -328,6 +341,8 @@ class Penerimaan extends Component
     {
         $this->resetInputFields();
         $this->openModal();
+        // Initialize with one empty detail row for manual entry
+        $this->addDetail();
     }
 
     public function openModal()
@@ -341,6 +356,28 @@ class Penerimaan extends Component
         $this->resetInputFields();
         $this->isShow = false;
         $this->poSearch = '';
+    }
+
+    public function addDetail()
+    {
+        $this->details[] = [
+            'barang_id' => '',
+            'nama_barang' => '',
+            'qty_po' => 0,
+            'qty_diterima' => 0,
+            'harga_satuan' => 0,
+            'diskon' => 0,
+            'ppn' => 0,
+            'subtotal' => 0,
+        ];
+    }
+
+    public function removeDetail($index)
+    {
+        if (count($this->details) > 0) {
+            unset($this->details[$index]);
+            $this->details = array_values($this->details);
+        }
     }
 
     private function resetInputFields()
@@ -419,6 +456,8 @@ class Penerimaan extends Component
 
             if (!$this->penerimaan_id) {
                 foreach ($this->details as $detail) {
+                    $harga_satuan = (float) ($detail['harga_satuan'] ?? 0);
+                    
                     $stok = Stok::firstOrNew([
                         'barang_id' => $detail['barang_id'],
                         'gudang_id' => $this->gudang_id,
@@ -427,7 +466,7 @@ class Penerimaan extends Component
                     $stok->save();
 
                     // Log to Kartu Stok
-                    \App\Models\KartuStok::create([
+                    KartuStok::create([
                         'tanggal' => $this->tanggal_terima,
                         'barang_id' => $detail['barang_id'],
                         'gudang_id' => $this->gudang_id,
@@ -440,35 +479,58 @@ class Penerimaan extends Component
                         'keterangan' => 'Penerimaan No ' . $this->no_penerimaan,
                         'inserted_user' => $userId,
                     ]);
+
+                    // Update harga_beli_terakhir for the barang
+                    $barang = Barang::find($detail['barang_id']);
+                    if ($barang && $harga_satuan > 0) {
+                        $barang->harga_beli_terakhir = $harga_satuan;
+                        $barang->save();
+                    }
                 }
                 
+                // Only update pembelian status if there's a PO reference
                 if ($pembelian) {
                     $pembelian->status = 'received';
                     $pembelian->save();
                 }
 
+                // Calculate and update HPP for all barang based on current stock
+                $this->updateHppForAllBarang();
+
                 $jurnal = Jurnal::create([
                     'no_jurnal' => 'PB-' . str_pad($penerimaan->id, 5, '0', STR_PAD_LEFT),
                     'tanggal' => $this->tanggal_terima,
-                    'keterangan' => 'Penerimaan Barang dari Pembelian No ' . ($pembelian->no_po ?? '-'),
+                    'keterangan' => $pembelian 
+                        ? 'Penerimaan Barang dari Pembelian No ' . $pembelian->no_po 
+                        : 'Penerimaan Barang Manual No ' . $this->no_penerimaan,
                     'referensi_id' => $penerimaan->id,
                     'referensi_tipe' => 'Penerimaan',
                     'inserted_user' => $userId,
                 ]);
 
+                // Get COA from settings
+                $coaPersediaan = \App\Models\Setting::getValue('coa_persediaan', 4);
+                $coaHutangSupplier = \App\Models\Setting::getValue('coa_hutang_supplier', 5);
+                
+                $akunPersediaan = Akun::find($coaPersediaan);
+                $akunHutang = Akun::find($coaHutangSupplier);
+                
                 $jurnal->details()->create([
-                    'akun_id' => 4,
-                    'nama_akun' => 'Persediaan Barang',
+                    'akun_id' => $coaPersediaan,
+                    'nama_akun' => $akunPersediaan->nama_akun ?? 'Persediaan Barang',
                     'debit' => $total_value,
                     'kredit' => 0,
                 ]);
 
-                $jurnal->details()->create([
-                    'akun_id' => 5,
-                    'nama_akun' => 'Hutang Usaha',
-                    'debit' => 0,
-                    'kredit' => $total_value,
-                ]);
+                // Only create Hutang Usaha journal if there's a PO reference
+                if ($pembelian) {
+                    $jurnal->details()->create([
+                        'akun_id' => $coaHutangSupplier,
+                        'nama_akun' => $akunHutang->nama_akun ?? 'Hutang Usaha',
+                        'debit' => 0,
+                        'kredit' => $total_value,
+                    ]);
+                }
             }
         });
 
@@ -479,6 +541,54 @@ class Penerimaan extends Component
         $this->dispatch('notify', message: $message, type: 'success');
         $this->closeModal();
         $this->resetInputFields();
+    }
+
+    /**
+     * Update HPP (Harga Pokok Penjualan) for all barang based on current stock
+     * HPP is calculated as weighted average price from all stock movements
+     */
+    private function updateHppForAllBarang()
+    {
+        // Get all barang
+        $barangs = Barang::all();
+        
+        foreach ($barangs as $barang) {
+            // Get all stock entries for this barang to calculate total quantity
+            $totalQty = Stok::where('barang_id', $barang->id)->sum('stok_akhir');
+            
+            if ($totalQty <= 0) {
+                continue;
+            }
+            
+            // Calculate weighted average price from all incoming stock movements
+            $kartuStokMasuk = KartuStok::where('barang_id', $barang->id)
+                ->where('jenis_transaksi', 'masuk')
+                ->where('referensi_tipe', 'Penerimaan')
+                ->get();
+            
+            $totalQtyForAvg = 0;
+            $totalValueForAvg = 0;
+            
+            foreach ($kartuStokMasuk as $kartu) {
+                // Get the penerimaan detail to find the purchase price
+                $penerimaanDetail = \App\Models\PenerimaanDetail::where('penerimaan_id', $kartu->referensi_id)
+                    ->where('barang_id', $barang->id)
+                    ->first();
+                
+                if ($penerimaanDetail) {
+                    $harga = $penerimaanDetail->harga_satuan;
+                    $qty = $kartu->qty_masuk;
+                    $totalQtyForAvg += $qty;
+                    $totalValueForAvg += $harga * $qty;
+                }
+            }
+            
+            if ($totalQtyForAvg > 0) {
+                $hpp = $totalValueForAvg / $totalQtyForAvg;
+                $barang->hpp = round($hpp, 2);
+                $barang->save();
+            }
+        }
     }
 
     public function delete($id)

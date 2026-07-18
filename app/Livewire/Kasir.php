@@ -46,6 +46,9 @@ class Kasir extends Component
     public $ppn_amount = 0; // calculated PPN amount
     public $ppn_id = null;
 
+    public $isView = false;
+    public $viewPenjualan = null;
+
     public function mount()
     {
         $this->tanggal = date('Y-m-d');
@@ -55,7 +58,7 @@ class Kasir extends Component
         $firstKas = Akun::where('tipe', 'aset')
             ->where(function ($q) {
                 $q->whereRaw('LOWER(nama_akun) LIKE ?', ['%kas%'])
-                  ->orWhereRaw('LOWER(nama_akun) LIKE ?', ['%bank%']);
+                    ->orWhereRaw('LOWER(nama_akun) LIKE ?', ['%bank%']);
             })
             ->first();
         $this->kas_id = $firstKas ? $firstKas->id : null;
@@ -65,6 +68,38 @@ class Kasir extends Component
         if ($defaultPpn) {
             $this->ppn_rate = $defaultPpn->rate;
             $this->ppn_id = $defaultPpn->id;
+        }
+
+        // Check if viewing an existing penjualan
+        if (request()->has('view')) {
+            $penjualan = ModelsPenjualan::with(['details.barang', 'gudang', 'creator'])->find(request('view'));
+            if ($penjualan) {
+                $this->isView = true;
+                $this->viewPenjualan = $penjualan;
+                $this->tanggal = $penjualan->tanggal->format('Y-m-d');
+                $this->gudang_id = $penjualan->gudang_id;
+                $this->kas_id = $penjualan->kas_id;
+                $this->diskon = $penjualan->diskon;
+                $this->ppn_rate = $penjualan->ppn_rate;
+                $this->ppn_amount = $penjualan->ppn;
+                $this->bayar = $penjualan->bayar;
+                $this->keterangan = $penjualan->keterangan;
+
+                // Load cart from penjualan details
+                $this->cart = $penjualan->details->map(function ($detail) {
+                    return [
+                        'barang_id' => $detail->barang_id,
+                        'kode' => $detail->barang->kode_barang ?? '',
+                        'nama' => $detail->barang->nama_barang ?? '',
+                        'barcode' => $detail->barang->barcode ?? '',
+                        'harga' => $detail->harga_satuan,
+                        'qty' => $detail->qty,
+                        'subtotal' => $detail->subtotal,
+                        'stok' => 0, // Will be updated if needed
+                        'diskon_persen' => $detail->diskon,
+                    ];
+                })->toArray();
+            }
         }
     }
 
@@ -146,12 +181,12 @@ class Kasir extends Component
     }
 
     /**
-     * Hitung harga jual barang berdasarkan harga beli + margin (%).
+     * Hitung harga jual barang berdasarkan HPP + margin (%).
      * Fallback ke harga_jual jika margin kosong.
      */
     public static function hitungHargaJual($barang)
     {
-        $basePrice = $barang->harga_beli_terakhir ?? 0;
+        $basePrice = $barang->hpp ?? $barang->harga_beli_terakhir ?? 0;
         $margin = $barang->margin_jual ?? 0;
 
         if ($margin > 0) {
@@ -403,15 +438,22 @@ class Kasir extends Component
                 'inserted_user' => $userId,
             ]);
 
+            // Get COA from settings
+            $coaPiutang = \App\Models\Setting::getValue('coa_piutang', 10);
+            $coaPendapatan = \App\Models\Setting::getValue('coa_pendapatan_penjualan', 10);
+            
+            $akunKas = Akun::find($this->kas_id);
+            $akunPendapatan = Akun::find($coaPendapatan);
+            
             $jurnal->details()->create([
                 'akun_id' => $this->kas_id,
-                'nama_akun' => $kas ? $kas->nama_akun : 'Kas',
+                'nama_akun' => $akunKas ? $akunKas->nama_akun : 'Kas',
                 'debit' => $total,
                 'kredit' => 0,
             ]);
             $jurnal->details()->create([
-                'akun_id' => 10,
-                'nama_akun' => 'Pendapatan dari Penjualan Barang',
+                'akun_id' => $coaPendapatan,
+                'nama_akun' => $akunPendapatan ? $akunPendapatan->nama_akun : 'Pendapatan Penjualan',
                 'debit' => 0,
                 'kredit' => $total,
             ]);
@@ -453,5 +495,53 @@ class Kasir extends Component
         }
 
         return $prefix . $newNumber;
+    }
+
+    /**
+     * Update HPP (Harga Pokok Penjualan) for all barang based on current stock
+     * HPP is calculated as weighted average price from all stock movements
+     */
+    private function updateHppForAllBarang()
+    {
+        // Get all barang
+        $barangs = Barang::all();
+        
+        foreach ($barangs as $barang) {
+            // Get all stock entries for this barang to calculate total quantity
+            $totalQty = Stok::where('barang_id', $barang->id)->sum('stok_akhir');
+            
+            if ($totalQty <= 0) {
+                continue;
+            }
+            
+            // Calculate weighted average price from all incoming stock movements
+            $kartuStokMasuk = KartuStok::where('barang_id', $barang->id)
+                ->where('jenis_transaksi', 'masuk')
+                ->where('referensi_tipe', 'Penerimaan')
+                ->get();
+            
+            $totalQtyForAvg = 0;
+            $totalValueForAvg = 0;
+            
+            foreach ($kartuStokMasuk as $kartu) {
+                // Get the penerimaan detail to find the purchase price
+                $penerimaanDetail = \App\Models\PenerimaanDetail::where('penerimaan_id', $kartu->referensi_id)
+                    ->where('barang_id', $barang->id)
+                    ->first();
+                
+                if ($penerimaanDetail) {
+                    $harga = $penerimaanDetail->harga_satuan;
+                    $qty = $kartu->qty_masuk;
+                    $totalQtyForAvg += $qty;
+                    $totalValueForAvg += $harga * $qty;
+                }
+            }
+            
+            if ($totalQtyForAvg > 0) {
+                $hpp = $totalValueForAvg / $totalQtyForAvg;
+                $barang->hpp = round($hpp, 2);
+                $barang->save();
+            }
+        }
     }
 }

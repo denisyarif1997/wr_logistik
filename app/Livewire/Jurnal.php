@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Gate;
+
 
 class Jurnal extends Component
 {
@@ -59,6 +61,15 @@ class Jurnal extends Component
 
     public function create()
     {
+
+        if (Gate::denies('jurnal-create')) {
+         $this->dispatch('notify',
+         message: 'Anda tidak mempunyai hak akses!',
+            type: 'error'
+        );
+        return;
+        }
+
         $this->resetForm();
         $this->isOpen = true;
         // Generate Auto Number
@@ -127,6 +138,16 @@ class Jurnal extends Component
 
     public function edit($id)
     {
+
+        
+        if (Gate::denies('jurnal-edit')) {
+      $this->dispatch('notify',
+        message: 'Anda tidak mempunyai hak akses!',
+        type: 'error'
+    );
+    return;
+}
+
         $jurnal = ModelsJurnal::with('details')->findOrFail($id);
         $this->jurnal_id = $jurnal->id;
         $this->no_jurnal = $jurnal->no_jurnal;
@@ -190,11 +211,23 @@ class Jurnal extends Component
 
     public function delete($id)
     {
+        if (Gate::denies('jurnal-delete')) {
+    $this->dispatch('notify',
+        message: 'Anda tidak mempunyai hak akses!',
+        type: 'error'
+    );
+    return;
+    }
         $jurnal = ModelsJurnal::findOrFail($id);
         $jurnal->details()->delete(); // Delete details first
         $jurnal->delete();
 
-        session()->flash('message', 'Jurnal berhasil dihapus.');
+        // session()->flash('message', 'Jurnal berhasil dihapus.');
+        $this->dispatch('notify',
+            message: 'Jurnal berhasil dihapus.',
+            type: 'success'
+        );
+
     }
 
     public function closeModal()

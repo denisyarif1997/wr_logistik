@@ -35,7 +35,7 @@
             <x-input-label for="Theme" class="form-label" :value="__('Tema Aplikasi')" />
             <select name="theme" id="Theme" class="form-control">
                 <option {{ Auth::user()->theme == 'default' ? 'selected' : '' }} value="default">Default</option>
-                <option {{ Auth::user()->theme == 'old' ? 'selected' : '' }} value="old">Old (Jadul)</option>
+                <option {{ Auth::user()->theme == 'old' ? 'selected' : '' }} value="old">Retro</option>
             </select>
             <x-input-error class="mt-2" :messages="$errors->get('theme')" />
         </div>

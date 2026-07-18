@@ -8,6 +8,7 @@ use App\Models\Pembayaran as ModelsPembayaran;
 use App\Models\Akun;
 use App\Models\Jurnal;
 use App\Models\JurnalDetail;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -208,10 +209,14 @@ class Pembayaran extends Component
                     'inserted_user' => $userId,
                 ]);
 
-                // Debit: Hutang Usaha (ID 5)
+                // Get COA from settings
+                $coaHutang = Setting::getValue('coa_hutang_supplier', 5);
+                $akunHutang = Akun::find($coaHutang);
+
+                // Debit: Hutang Supplier (from settings)
                 $jurnal->details()->create([
-                    'akun_id' => 5, // Hutang Usaha
-                    'nama_akun' => 'Hutang Usaha',
+                    'akun_id' => $coaHutang,
+                    'nama_akun' => $akunHutang ? $akunHutang->nama_akun : 'Hutang Supplier',
                     'debit' => $this->jumlah_bayar,
                     'kredit' => 0,
                 ]);

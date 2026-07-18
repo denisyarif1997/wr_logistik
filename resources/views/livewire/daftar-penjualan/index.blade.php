@@ -1,7 +1,4 @@
 <div>
-    @if($isShow)
-        @include('livewire.daftar-penjualan.show')
-    @else
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Daftar Penjualan</h3>
@@ -62,9 +59,9 @@
                             </td>
                             <td>{{ $p->creator->name ?? '-' }}</td>
                             <td>
-                                <button wire:click="show({{ $p->id }})" class="btn btn-sm btn-secondary">
-                                    <i class="fas fa-eye"></i> Show
-                                </button>
+                                <a href="{{ route('admin.kasir.index', ['view' => $p->id]) }}" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-eye"></i> Lihat
+                                </a>
                                 <a href="{{ route('admin.kasir.print', $p->id) }}" target="_blank" class="btn btn-sm btn-info">
                                     <i class="fas fa-print"></i>
                                 </a>
@@ -81,5 +78,4 @@
             {{ $penjualans->links() }}
         </div>
     </div>
-    @endif
 </div>

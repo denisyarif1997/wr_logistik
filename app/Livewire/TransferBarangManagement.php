@@ -11,6 +11,8 @@ use App\Models\Barang;
 use App\Models\Stok;
 use App\Models\KartuStok;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+
 
 class TransferBarangManagement extends Component
 {
@@ -86,6 +88,7 @@ class TransferBarangManagement extends Component
             })
             ->orderBy('id', 'desc')
             ->paginate(10);
+            // dd($transfers);
 
         return view('livewire.transfer-barang.index', compact('transfers', 'gudangList', 'barangList', 'stokInfo'))
             ->with('title', 'Transfer Barang');
@@ -201,6 +204,14 @@ class TransferBarangManagement extends Component
 
     public function proses($id)
     {
+        if (Gate::denies('transfer-proses')) {
+         $this->dispatch('notify',
+         message: 'Anda tidak mempunyai hak akses!',
+            type: 'error'
+        );
+        return;
+        }
+        
         $transfer = TransferBarang::with('details')->findOrFail($id);
         
         if ($transfer->status !== 'pending') {
@@ -282,6 +293,9 @@ class TransferBarangManagement extends Component
                 'updated_user' => auth()->id(),
             ]);
 
+            // Update HPP for all barang after stock changes
+            $this->updateHppForAllBarang();
+
             DB::commit();
             $msg = 'Transfer berhasil diproses';
             session()->flash('message', $msg);
@@ -331,5 +345,53 @@ class TransferBarangManagement extends Component
     public function updatingSearch()
     {
         $this->resetPage();
+    }
+
+    /**
+     * Update HPP (Harga Pokok Penjualan) for all barang based on current stock
+     * HPP is calculated as weighted average price from all stock movements
+     */
+    private function updateHppForAllBarang()
+    {
+        // Get all barang
+        $barangs = Barang::all();
+        
+        foreach ($barangs as $barang) {
+            // Get all stock entries for this barang to calculate total quantity
+            $totalQty = Stok::where('barang_id', $barang->id)->sum('stok_akhir');
+            
+            if ($totalQty <= 0) {
+                continue;
+            }
+            
+            // Calculate weighted average price from all incoming stock movements
+            $kartuStokMasuk = KartuStok::where('barang_id', $barang->id)
+                ->where('jenis_transaksi', 'masuk')
+                ->where('referensi_tipe', 'Penerimaan')
+                ->get();
+            
+            $totalQtyForAvg = 0;
+            $totalValueForAvg = 0;
+            
+            foreach ($kartuStokMasuk as $kartu) {
+                // Get the penerimaan detail to find the purchase price
+                $penerimaanDetail = \App\Models\PenerimaanDetail::where('penerimaan_id', $kartu->referensi_id)
+                    ->where('barang_id', $barang->id)
+                    ->first();
+                
+                if ($penerimaanDetail) {
+                    $harga = $penerimaanDetail->harga_satuan;
+                    $qty = $kartu->qty_masuk;
+                    $totalQtyForAvg += $qty;
+                    $totalValueForAvg += $harga * $qty;
+                }
+            }
+            
+            if ($totalQtyForAvg > 0) {
+                $hpp = $totalValueForAvg / $totalQtyForAvg;
+                $barang->hpp = round($hpp, 2);
+                $barang->save();
+            }
+        }
     }
 }

@@ -32,7 +32,7 @@ class Akun extends Component
     {
         $akuns = ModelsAkun::where('nama_akun', 'like', '%' . $this->search . '%')
             ->orWhere('kode_akun', 'like', '%' . $this->search . '%')
-            ->orderBy('id', 'desc')
+            ->orderBy('kode_akun', 'asc')
             ->paginate(10);
 
         return view('livewire.akun.index', compact('akuns'));

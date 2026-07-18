@@ -15,10 +15,6 @@ class DaftarPenjualan extends Component
     public $search = '';
     public $startDate, $endDate;
 
-    // Show
-    public $isShow = false;
-    public $showPenjualan;
-
     public function mount()
     {
         $this->startDate = now()->subMonth()->format('Y-m-d');
@@ -30,18 +26,6 @@ class DaftarPenjualan extends Component
         $this->resetPage();
     }
 
-    public function show($id)
-    {
-        $this->showPenjualan = Penjualan::with(['gudang', 'creator', 'details.barang'])->findOrFail($id);
-        $this->isShow = true;
-    }
-
-    public function closeShow()
-    {
-        $this->isShow = false;
-        $this->showPenjualan = null;
-    }
-
     public function render()
     {
         $penjualans = Penjualan::with(['gudang', 'creator', 'details'])
@@ -51,7 +35,6 @@ class DaftarPenjualan extends Component
             ->whereBetween('tanggal', [$this->startDate, $this->endDate])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
-            // dd($penjualans);
 
         return view('livewire.daftar-penjualan.index', compact('penjualans'));
     }

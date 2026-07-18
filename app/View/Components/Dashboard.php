@@ -100,6 +100,39 @@ class Dashboard extends Component
                 ->get();
         });
         view()->share('stokPerGudang', $stokPerGudang);
+
+        // --- WEEKLY ACTIVITY DATA (untuk chart) ---
+        $weeklyActivity = $this->getWeeklyActivityData();
+        view()->share('weeklyActivity', $weeklyActivity);
+    }
+
+    /**
+     * Ambil data aktivitas mingguan untuk chart
+     */
+    private function getWeeklyActivityData(): array
+    {
+        $cacheKey = 'dashboard.weekly_activity';
+        
+        return Cache::remember($cacheKey, self::CACHE_DURATION, function () {
+            $data = [
+                'labels' => ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                'penerimaan' => [],
+                'pemakaian' => [],
+            ];
+
+            // Get data for last 7 days
+            for ($i = 6; $i >= 0; $i--) {
+                $date = now()->subDays($i)->format('Y-m-d');
+                
+                $penerimaanCount = Penerimaan::whereDate('tanggal_terima', $date)->count();
+                $pemakaianCount = Pemakaian::whereDate('tanggal_pakai', $date)->count();
+                
+                $data['penerimaan'][] = $penerimaanCount;
+                $data['pemakaian'][] = $pemakaianCount;
+            }
+
+            return $data;
+        });
     }
 
     /**

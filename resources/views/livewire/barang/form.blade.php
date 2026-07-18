@@ -19,6 +19,11 @@
                 <input type="text" class="form-control" id="barcode" placeholder="Enter Barcode" wire:model="barcode">
                 @error('barcode') <span class="text-danger">{{ $message }}</span>@enderror
             </div>
+             {{-- <div class="form-group">
+                <label for="barcode">Hpp</label>
+                <input type="text" class="form-control" id="barcode" placeholder="Enter hpp" wire:model="hpp">
+                @error('hpp') <span class="text-danger">{{ $message }}</span>@enderror
+            </div> --}}
             <div class="form-group">
                 <label for="satuan">Satuan</label>
                 <select wire:model="satuan" class="form-control">
@@ -39,6 +44,11 @@
                 <label for="harga_beli_terakhir">Harga Beli Terakhir</label>
                 <input type="number" class="form-control" id="harga_beli_terakhir" placeholder="Enter Harga Beli Terakhir" wire:model="harga_beli_terakhir">
                 @error('harga_beli_terakhir') <span class="text-danger">{{ $message }}</span>@enderror
+            </div>
+            <div class="form-group">
+                <label for="barcode">Hpp</label>
+                <input type="text" class="form-control" id="barcode" placeholder="Enter hpp" wire:model="hpp">
+                @error('hpp') <span class="text-danger">{{ $message }}</span>@enderror
             </div>
             <div class="form-group">
                 <label for="is_jual">Jualable?</label>
