@@ -6,7 +6,6 @@ use App\Models\{Barang, Pembelian, Penerimaan, Pemakaian, Pembayaran, Stok, Guda
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 
 class Dashboard extends Component
@@ -89,7 +88,6 @@ class Dashboard extends Component
         view()->share('recentPemakaian', $recentPemakaian);
 
         // --- LOW STOCK ITEMS (diaktifkan kembali dengan query yang dioptimasi) ---
-        // Optimasi: gunakan subquery dengan select spesifik
         $lowStockItems = $this->getLowStockItemsOptimized();
         view()->share('lowStockItems', $lowStockItems);
 
@@ -121,6 +119,139 @@ class Dashboard extends Component
         // --- WEEKLY ACTIVITY DATA (untuk chart) ---
         $weeklyActivity = $this->getWeeklyActivityData();
         view()->share('weeklyActivity', $weeklyActivity);
+
+        // --- ADDITIONAL CHART DATA ---
+        // Data distribusi barang per kategori (untuk pie/doughnut chart)
+        $kategoriDistribusi = $this->getKategoriDistribusi();
+        view()->share('kategoriDistribusi', $kategoriDistribusi);
+
+        // Data perbandingan bulanan (untuk bar chart)
+        $monthlyComparison = $this->getMonthlyComparison();
+        view()->share('monthlyComparison', $monthlyComparison);
+
+        // Data top barang terbanyak stoknya
+        $topStokBarang = $this->getTopStokBarang();
+        view()->share('topStokBarang', $topStokBarang);
+    }
+
+    /**
+     * Ambil data distribusi stok per gudang untuk pie chart
+     */
+    private function getKategoriDistribusi(): array
+    {
+        $cacheKey = 'dashboard.gudang_distribusi';
+        
+        return Cache::remember($cacheKey, self::CACHE_DURATION, function () {
+            $gudangs = Gudang::select('id', 'nama_gudang')
+                ->withSum('stok', 'stok_akhir')
+                ->get();
+            
+            $data = [
+                'labels' => [],
+                'data' => [],
+                'colors' => [],
+            ];
+
+            $colorPalette = [
+                '#534AB7', '#0F6E56', '#185FA5', '#854F0B', '#993C1D',
+                '#993556', '#059669', '#6366f1', '#d97706', '#dc2626',
+                '#2563eb', '#7c3aed', '#db2777', '#ea580c', '#0891b2'
+            ];
+
+            $i = 0;
+            foreach ($gudangs as $gudang) {
+                $stokTotal = (int) ($gudang->stok_sum_stok_akhir ?? 0);
+                if ($stokTotal > 0) {
+                    $data['labels'][] = $gudang->nama_gudang;
+                    $data['data'][] = $stokTotal;
+                    $data['colors'][] = $colorPalette[$i % count($colorPalette)];
+                    $i++;
+                }
+            }
+
+            return $data;
+        });
+    }
+
+    /**
+     * Ambil data perbandingan bulanan (pembelian, penerimaan, pemakaian)
+     */
+    private function getMonthlyComparison(): array
+    {
+        $cacheKey = 'dashboard.monthly_comparison';
+        
+        return Cache::remember($cacheKey, self::CACHE_DURATION, function () {
+            $data = [
+                'labels' => [],
+                'pembelian' => [],
+                'penerimaan' => [],
+                'pemakaian' => [],
+            ];
+
+            // Get data for last 6 months
+            for ($i = 5; $i >= 0; $i--) {
+                $month = now()->subMonths($i);
+                $yearMonth = $month->format('Y-m');
+                $label = $month->translatedFormat('M Y');
+                
+                $data['labels'][] = $label;
+
+                // Count pembelian in that month
+                $pembelianCount = Pembelian::whereYear('tanggal_po', $month->year)
+                    ->whereMonth('tanggal_po', $month->month)
+                    ->count();
+                $data['pembelian'][] = $pembelianCount;
+
+                // Count penerimaan in that month
+                $penerimaanCount = Penerimaan::whereYear('tanggal_terima', $month->year)
+                    ->whereMonth('tanggal_terima', $month->month)
+                    ->count();
+                $data['penerimaan'][] = $penerimaanCount;
+
+                // Count pemakaian in that month
+                $pemakaianCount = Pemakaian::whereYear('tanggal_pakai', $month->year)
+                    ->whereMonth('tanggal_pakai', $month->month)
+                    ->count();
+                $data['pemakaian'][] = $pemakaianCount;
+            }
+
+            return $data;
+        });
+    }
+
+    /**
+     * Ambil data top 10 barang dengan stok terbanyak
+     */
+    private function getTopStokBarang(): array
+    {
+        $cacheKey = 'dashboard.top_stok_barang';
+        
+        return Cache::remember($cacheKey, self::CACHE_DURATION, function () {
+            $barang = Barang::select('id', 'kode_barang', 'nama_barang')
+                ->selectSub(function ($query) {
+                    $query->selectRaw('COALESCE(SUM(stok_akhir), 0)')
+                        ->from('stok')
+                        ->whereColumn('barang_id', 'barang.id');
+                }, 'total_stok')
+                ->orderByDesc('total_stok')
+                ->take(10)
+                ->get();
+            
+            $data = [
+                'labels' => [],
+                'data' => [],
+            ];
+
+            foreach ($barang as $item) {
+                $label = strlen($item->nama_barang) > 20 
+                    ? substr($item->nama_barang, 0, 20) . '...' 
+                    : $item->nama_barang;
+                $data['labels'][] = $label;
+                $data['data'][] = (int) $item->total_stok;
+            }
+
+            return $data;
+        });
     }
 
     /**
@@ -157,16 +288,12 @@ class Dashboard extends Component
 
     /**
      * Hitung total hutang dengan query teroptimasi (tanpa N+1, tanpa looping PHP)
-     * Menggunakan subquery untuk menghitung subtotal PenerimaanDetail langsung di DB
      */
     private function getTotalHutangOptimized(): float
     {
-        // Ambil dari cache agar tidak query berat setiap load
         $cacheKey = 'dashboard.total_hutang';
         
         return Cache::remember($cacheKey, self::CACHE_DURATION, function () {
-            // Optimasi: hitung total hutang dengan subquery langsung di database
-            // Total hutang = SUM(calculated_total) - SUM(jumlah_bayar_lunas) untuk status != lunas
             $totalTagihan = Penerimaan::selectRaw('COALESCE(SUM(
                 COALESCE((SELECT SUM(subtotal) FROM penerimaan_detail WHERE penerimaan_id = penerimaan.id), 0)
                 - COALESCE(diskon, 0) 
@@ -190,7 +317,6 @@ class Dashboard extends Component
         $cacheKey = 'dashboard.low_stock_items';
         
         return Cache::remember($cacheKey, self::CACHE_DURATION, function () {
-            // Optimasi: gunakan query dengan subquery untuk menghitung total stok per barang
             return Barang::select([
                     'id',
                     'kode_barang',

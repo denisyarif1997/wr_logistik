@@ -745,28 +745,96 @@
     @livewireScripts
 
     <script data-navigate-once>
-        // SweetAlert2 notification helper (Toast)
+        // Toast Styles Configuration
+        var toastStyles = {
+            success: {
+                bg: 'linear-gradient(135deg, #6B9080 0%, #8FB3A3 100%)',
+                icon: 'fas fa-check-circle'
+            },
+            error: {
+                bg: 'linear-gradient(135deg, #C1494F 0%, #D3777C 100%)',
+                icon: 'fas fa-times-circle'
+            },
+            warning: {
+                bg: 'linear-gradient(135deg, #E0A458 0%, #E0B074 100%)',
+                icon: 'fas fa-exclamation-triangle'
+            },
+            info: {
+                bg: 'linear-gradient(135deg, #3D5A80 0%, #6E8FAF 100%)',
+                icon: 'fas fa-info-circle'
+            }
+        };
+
+        // Modern notification helper (Custom HTML Toast)
         function showNotification(message, type = 'success', title = null) {
             if (!message) return;
 
             var titleText = title || (type === 'success' ? 'Berhasil!' : type === 'error' ? 'Gagal!' : type === 'warning' ? 'Peringatan!' : 'Informasi');
+            var style = toastStyles[type] || toastStyles.info;
 
             const Toast = Swal.mixin({
                 toast: true,
                 position: 'top-end',
                 showConfirmButton: false,
-                timer: 3000,
+                timer: 4000,
                 timerProgressBar: true,
+                customClass: {
+                    container: 'swal2-modern-toast',
+                    popup: 'swal2-modern-popup',
+                    title: 'swal2-modern-title',
+                    htmlContainer: 'swal2-modern-html'
+                },
                 didOpen: (toast) => {
                     toast.addEventListener('mouseenter', Swal.stopTimer);
                     toast.addEventListener('mouseleave', Swal.resumeTimer);
+                    // Add custom styling
+                    var popup = toast.querySelector('.swal2-popup');
+                    if (popup) {
+                        popup.style.background = style.bg;
+                        popup.style.boxShadow = '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)';
+                        popup.style.borderRadius = '12px';
+                        popup.style.padding = '14px 18px';
+                        popup.style.border = 'none';
+                        popup.style.color = '#fff';
+                    }
+                    var titleEl = toast.querySelector('.swal2-title');
+                    if (titleEl) {
+                        titleEl.style.color = '#fff';
+                        titleEl.style.fontSize = '14px';
+                        titleEl.style.fontWeight = '600';
+                        titleEl.style.margin = '0';
+                        titleEl.style.padding = '0 0 2px 0';
+                    }
+                    var htmlEl = toast.querySelector('.swal2-html-container');
+                    if (htmlEl) {
+                        htmlEl.style.color = 'rgba(255,255,255,0.9)';
+                        htmlEl.style.fontSize = '13px';
+                        htmlEl.style.margin = '0';
+                        htmlEl.style.padding = '0';
+                    }
+                    var iconEl = toast.querySelector('.swal2-icon');
+                    if (iconEl) {
+                        iconEl.style.border = 'none';
+                        iconEl.style.margin = '0 10px 0 0';
+                        iconEl.style.fontSize = '20px';
+                        iconEl.style.width = 'auto';
+                        iconEl.style.height = 'auto';
+                    }
+                    var progressEl = toast.querySelector('.swal2-timer-progress-bar');
+                    if (progressEl) {
+                        progressEl.style.background = 'rgba(255,255,255,0.5)';
+                        progressEl.style.height = '3px';
+                    }
                 }
             });
 
             Toast.fire({
                 icon: type,
+                iconHtml: '<i class="' + style.icon + '" style="font-size:20px;color:#fff;"></i>',
                 title: titleText,
-                text: message
+                text: message,
+                color: '#fff',
+                background: style.bg
             });
         }
 

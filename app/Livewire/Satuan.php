@@ -94,7 +94,7 @@ class Satuan extends Component
             ]);
             session()->flash('message', 'Data satuan berhasil ditambahkan.');
         }
-
+        // $message = $this->kode_satuan ? 'Akun updated successfully.' : 'Akun created successfully.';
         $this->closeModal();
         $this->resetInputFields();
     }

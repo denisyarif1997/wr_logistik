@@ -76,16 +76,6 @@
     .stat-card .sc-trend.positive { color: #059669; }
     .stat-card .sc-trend.negative { color: #dc2626; }
     .stat-card .sc-trend.neutral { color: #6b7280; }
-    .stat-card .sc-link { 
-        font-size: 12px; 
-        color: #6366f1; 
-        margin-top: 12px; 
-        display: inline-flex; 
-        align-items: center; 
-        gap: 4px;
-        position: relative;
-        z-index: 1;
-    }
 
     /* Accent colors */
     .accent-purple .sc-val { color: #534AB7; }
@@ -230,70 +220,12 @@
     }
     .chart-wrapper {
         position: relative;
+        height: 200px;
+    }
+    .chart-wrapper-sm {
+        position: relative;
         height: 180px;
     }
-
-    /* Quick actions */
-    .quick-actions {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 12px;
-        padding: 16px 20px;
-    }
-    .quick-action-btn {
-        background: #f9fafb;
-        border: 1px solid #e5e5e5;
-        border-radius: 10px;
-        padding: 12px;
-        text-align: center;
-        text-decoration: none;
-        transition: all 0.2s;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-    }
-    .quick-action-btn:hover {
-        background: #6366f1;
-        color: #fff;
-        transform: translateY(-2px);
-    }
-    .quick-action-btn:hover i { color: #fff; }
-    .quick-action-btn i { font-size: 18px; color: #6366f1; }
-    .quick-action-btn span { font-size: 11px; font-weight: 500; color: #374151; }
-    .quick-action-btn:hover span { color: #fff; }
-
-    /* Activity timeline */
-    .activity-timeline {
-        padding: 16px 20px;
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    .activity-item {
-        display: flex;
-        gap: 12px;
-        padding: 12px 0;
-        border-bottom: 1px solid #f0f0ee;
-    }
-    .activity-item:last-child { border-bottom: none; }
-    .activity-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        flex-shrink: 0;
-    }
-    .activity-icon.purchase { background: #EDEDFD; color: #534AB7; }
-    .activity-icon.receiving { background: #E6F1FB; color: #185FA5; }
-    .activity-icon.usage { background: #FCEBEB; color: #A32D2D; }
-    .activity-icon.payment { background: #EAF3DE; color: #3B6D11; }
-    .activity-content { flex: 1; }
-    .activity-content .act-title { font-size: 13px; font-weight: 500; color: #1f2937; margin: 0; }
-    .activity-content .act-desc { font-size: 11px; color: #6b7280; margin: 2px 0 0; }
-    .activity-content .act-time { font-size: 10px; color: #9ca3af; margin-top: 4px; }
 
     /* Summary cards */
     .summary-card {
@@ -324,8 +256,52 @@
         transition: width 0.5s ease;
     }
 
+    /* Activity timeline */
+    .activity-timeline {
+        padding: 16px 20px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .activity-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0ee;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+    .activity-icon.purchase { background: #EDEDFD; color: #534AB7; }
+    .activity-icon.receiving { background: #E6F1FB; color: #185FA5; }
+    .activity-icon.usage { background: #FCEBEB; color: #A32D2D; }
+    .activity-icon.payment { background: #EAF3DE; color: #3B6D11; }
+    .activity-icon.sale { background: #EAF3DE; color: #059669; }
+    .activity-content { flex: 1; }
+    .activity-content .act-title { font-size: 13px; font-weight: 500; color: #1f2937; margin: 0; }
+    .activity-content .act-desc { font-size: 11px; color: #6b7280; margin: 2px 0 0; }
+    .activity-content .act-time { font-size: 10px; color: #9ca3af; margin-top: 4px; }
+
+    /* Chart grid for multiple charts */
+    .chart-grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 992px) {
+        .chart-grid-3 { grid-template-columns: 1fr 1fr; }
+    }
     @media (max-width: 768px) {
-        .panel-grid-2, .panel-grid-3 { grid-template-columns: 1fr; }
+        .panel-grid-2, .panel-grid-3, .chart-grid-3 { grid-template-columns: 1fr; }
         .stat-grid { grid-template-columns: repeat(2, 1fr); }
         .dash-page-title { font-size: 20px; }
     }
@@ -383,7 +359,6 @@
             <span class="sc-trend positive">
                 <i class="fas fa-arrow-up"></i> +12% dari bulan lalu
             </span>
-            <span class="sc-link">Lihat detail <i class="fas fa-arrow-right" style="font-size:9px"></i></span>
         </a>
         <a href="{{ route('admin.stok.index') }}" class="stat-card accent-teal">
             <i class="fas fa-warehouse sc-icon"></i>
@@ -392,7 +367,6 @@
             <span class="sc-trend positive">
                 <i class="fas fa-arrow-up"></i> +8% dari bulan lalu
             </span>
-            <span class="sc-link">Lihat detail <i class="fas fa-arrow-right" style="font-size:9px"></i></span>
         </a>
         <a href="{{ route('admin.pembelian.index') }}" class="stat-card accent-blue">
             <i class="fas fa-shopping-cart sc-icon"></i>
@@ -401,7 +375,6 @@
             <span class="sc-trend neutral">
                 <i class="fas fa-minus"></i> Data statis
             </span>
-            <span class="sc-link">Lihat detail <i class="fas fa-arrow-right" style="font-size:9px"></i></span>
         </a>
         <a href="{{ route('admin.penerimaan.index') }}" class="stat-card accent-amber">
             <i class="fas fa-truck-loading sc-icon"></i>
@@ -410,7 +383,6 @@
             <span class="sc-trend positive">
                 <i class="fas fa-arrow-up"></i> +15% dari bulan lalu
             </span>
-            <span class="sc-link">Lihat detail <i class="fas fa-arrow-right" style="font-size:9px"></i></span>
         </a>
         <a href="{{ route('admin.pemakaian.index') }}" class="stat-card accent-coral">
             <i class="fas fa-dolly sc-icon"></i>
@@ -419,17 +391,22 @@
             <span class="sc-trend negative">
                 <i class="fas fa-arrow-down"></i> -5% dari bulan lalu
             </span>
-            <span class="sc-link">Lihat detail <i class="fas fa-arrow-right" style="font-size:9px"></i></span>
         </a>
         <a href="{{ route('admin.pembayaran.index') }}" class="stat-card accent-pink">
-            <i class="fas fa-money-bill-wave sc-icon"></i>
-            <span class="sc-val">Rp {{ number_format($totalHutang / 1000000, 1) }}jt</span>
-            <span class="sc-lbl">Total hutang</span>
-            <span class="sc-trend negative">
-                <i class="fas fa-arrow-down"></i> Perlu ditindaklanjuti
-            </span>
-            <span class="sc-link">Lihat detail <i class="fas fa-arrow-right" style="font-size:9px"></i></span>
-        </a>
+    <i class="fas fa-money-bill-wave sc-icon"></i>
+    <span class="sc-val">Rp {{ number_format($totalHutang / 1000000, 1) }}jt</span>
+    <span class="sc-lbl">Total Hutang</span>
+
+    @if($totalHutang > 1000000)
+        <span class="sc-trend negative">
+            <i class="fas fa-arrow-down"></i> Perlu ditindaklanjuti
+        </span>
+    @else
+        <span class="sc-trend positive">
+            <i class="fas fa-check-circle"></i> Kondisi aman
+        </span>
+    @endif
+</a>
         <a href="{{ route('admin.pembayaran.index') }}" class="stat-card accent-teal">
             <i class="fas fa-credit-card sc-icon"></i>
             <span class="sc-val">Rp {{ number_format($totalPembayaran / 1000000, 1) }}jt</span>
@@ -437,7 +414,6 @@
             <span class="sc-trend positive">
                 <i class="fas fa-arrow-up"></i> +20% dari bulan lalu
             </span>
-            <span class="sc-link">Lihat detail <i class="fas fa-arrow-right" style="font-size:9px"></i></span>
         </a>
         <a href="{{ route('admin.kasir.index') }}" class="stat-card accent-emerald">
             <i class="fas fa-shopping-bag sc-icon"></i>
@@ -446,7 +422,6 @@
             <span class="sc-trend positive">
                 <i class="fas fa-arrow-up"></i> +10% dari bulan lalu
             </span>
-            <span class="sc-link">Lihat detail <i class="fas fa-arrow-right" style="font-size:9px"></i></span>
         </a>
         <div class="stat-card accent-gray">
             <i class="fas fa-users sc-icon"></i>
@@ -469,60 +444,65 @@
     </div>
     @endif
 
-    {{-- Chart & Quick Actions --}}
-    <div class="panel-grid-2">
-        {{-- Chart Panel --}}
+    {{-- Chart Section - Line chart Aktivitas 7 Hari (Full width) --}}
+    <div class="dash-panel mb-4">
+        <div class="dash-panel-head">
+            <div class="dash-panel-head-left">
+                <i class="fas fa-chart-line"></i>
+                <span>Aktivitas 7 Hari Terakhir</span>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    {{-- 3 Chart Grid: Doughnut, Bar Comparison, Horizontal Bar --}}
+    <div class="chart-grid-3">
+        {{-- Doughnut Chart - Distribusi Kategori --}}
         <div class="dash-panel">
             <div class="dash-panel-head">
                 <div class="dash-panel-head-left">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Aktivitas 7 Hari Terakhir</span>
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Distribusi Stok per Gudang</span>
                 </div>
             </div>
             <div class="chart-container">
-                <div class="chart-wrapper">
-                    <canvas id="activityChart"></canvas>
+                <div class="chart-wrapper-sm">
+                    <canvas id="kategoriChart"></canvas>
                 </div>
             </div>
         </div>
 
-        {{-- Quick Actions --}}
+        {{-- Bar Chart - Perbandingan Bulanan --}}
         <div class="dash-panel">
             <div class="dash-panel-head">
                 <div class="dash-panel-head-left">
-                    <i class="fas fa-bolt"></i>
-                    <span>Aksi Cepat</span>
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Perbandingan Bulanan (6 Bulan)</span>
                 </div>
             </div>
-            <div class="quick-actions">
-                <a href="{{ route('admin.barang.index') }}" class="quick-action-btn">
-                    <i class="fas fa-box"></i>
-                    <span>Data Barang</span>
-                </a>
-                <a href="{{ route('admin.pembelian.index') }}" class="quick-action-btn">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span>Purchase Order</span>
-                </a>
-                <a href="{{ route('admin.penerimaan.index') }}" class="quick-action-btn">
-                    <i class="fas fa-truck-loading"></i>
-                    <span>Penerimaan</span>
-                </a>
-                <a href="{{ route('admin.pemakaian.index') }}" class="quick-action-btn">
-                    <i class="fas fa-dolly"></i>
-                    <span>Pemakaian</span>
-                </a>
-                <a href="{{ route('admin.kasir.index') }}" class="quick-action-btn">
-                    <i class="fas fa-shopping-bag"></i>
-                    <span>Penjualan</span>
-                </a>
-                <a href="{{ route('admin.pembayaran.index') }}" class="quick-action-btn">
-                    <i class="fas fa-money-bill"></i>
-                    <span>Pembayaran</span>
-                </a>
-                <a href="{{ route('admin.stok.index') }}" class="quick-action-btn">
-                    <i class="fas fa-warehouse"></i>
-                    <span>Stok Gudang</span>
-                </a>
+            <div class="chart-container">
+                <div class="chart-wrapper-sm">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        {{-- Horizontal Bar - Top Stok Barang --}}
+        <div class="dash-panel">
+            <div class="dash-panel-head">
+                <div class="dash-panel-head-left">
+                    <i class="fas fa-trophy"></i>
+                    <span>Top 10 Stok Terbanyak</span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-wrapper-sm">
+                    <canvas id="topStokChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -674,7 +654,7 @@
     </div>
 
     {{-- Penjualan Terbaru --}}
-    <div class="dash-panel">
+    <div class="dash-panel mb-4">
         <div class="dash-panel-head">
             <div class="dash-panel-head-left">
                 <i class="fas fa-shopping-bag"></i>
@@ -716,32 +696,102 @@
         </table>
     </div>
 
-    {{-- Stok Per Gudang --}}
-    <div class="dash-panel">
-        <div class="dash-panel-head">
-            <div class="dash-panel-head-left">
-                <i class="fas fa-warehouse"></i>
-                <span>Stok per gudang</span>
+    {{-- Stok Per Gudang & Aktivitas Terbaru --}}
+    <div class="panel-grid-2">
+        <div class="dash-panel">
+            <div class="dash-panel-head">
+                <div class="dash-panel-head-left">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Stok per gudang</span>
+                </div>
+            </div>
+            <div class="wh-grid">
+                @forelse($stokPerGudang as $gudang)
+                <div class="wh-tile">
+                    <div class="wh-name">{{ $gudang->nama_gudang }}</div>
+                    <div class="wh-val">{{ number_format($gudang->stok_sum_stok_akhir ?? 0) }}</div>
+                    <div class="wh-unit">Item</div>
+                </div>
+                @empty
+                <p style="font-size:13px; color:#9ca3af; padding:16px; margin:0;">Belum ada data gudang.</p>
+                @endforelse
             </div>
         </div>
-        <div class="wh-grid">
-            @forelse($stokPerGudang as $gudang)
-            <div class="wh-tile">
-                <div class="wh-name">{{ $gudang->nama_gudang }}</div>
-                <div class="wh-val">{{ number_format($gudang->stok_sum_stok_akhir ?? 0) }}</div>
-                <div class="wh-unit">Item</div>
+
+        {{-- Activity Timeline --}}
+        <div class="dash-panel">
+            <div class="dash-panel-head">
+                <div class="dash-panel-head-left">
+                    <i class="fas fa-clock-rotate"></i>
+                    <span>Aktivitas Terbaru</span>
+                </div>
             </div>
-            @empty
-            <p style="font-size:13px; color:#9ca3af; padding:16px; margin:0;">Belum ada data gudang.</p>
-            @endforelse
+            <div class="activity-timeline">
+                @php
+                    $activities = collect();
+                    foreach($recentPO as $po) {
+                        $activities->push([
+                            'icon' => 'purchase',
+                            'iconFa' => 'fa-shopping-cart',
+                            'title' => 'PO Baru: ' . ($po->no_po ?? ''),
+                            'desc' => 'Supplier: ' . ($po->supplier->nama_supplier ?? '-'),
+                            'time' => $po->tanggal_po ? \Carbon\Carbon::parse($po->tanggal_po)->diffForHumans() : '-',
+                        ]);
+                    }
+                    foreach($recentPenerimaan as $trm) {
+                        $activities->push([
+                            'icon' => 'receiving',
+                            'iconFa' => 'fa-truck-loading',
+                            'title' => 'Penerimaan: ' . ($trm->no_penerimaan ?? ''),
+                            'desc' => 'Dari: ' . ($trm->pembelian->supplier->nama_supplier ?? '-'),
+                            'time' => $trm->tanggal_terima ? \Carbon\Carbon::parse($trm->tanggal_terima)->diffForHumans() : '-',
+                        ]);
+                    }
+                    foreach($recentPemakaian as $pk) {
+                        $activities->push([
+                            'icon' => 'usage',
+                            'iconFa' => 'fa-dolly',
+                            'title' => 'Pemakaian: ' . ($pk->no_pemakaian ?? ''),
+                            'desc' => 'Dept: ' . ($pk->departemen->nama_departemen ?? '-'),
+                            'time' => $pk->tanggal_pakai ? \Carbon\Carbon::parse($pk->tanggal_pakai)->diffForHumans() : '-',
+                        ]);
+                    }
+                    foreach($recentPenjualan as $jual) {
+                        $activities->push([
+                            'icon' => 'sale',
+                            'iconFa' => 'fa-shopping-bag',
+                            'title' => 'Penjualan: ' . ($jual->no_penjualan ?? ''),
+                            'desc' => 'Total: Rp ' . number_format(($jual->total ?? 0) / 1000000, 1) . 'jt',
+                            'time' => $jual->tanggal ? \Carbon\Carbon::parse($jual->tanggal)->diffForHumans() : '-',
+                        ]);
+                    }
+                    $activities = $activities->sortByDesc('time')->take(10);
+                @endphp
+
+                @forelse($activities as $activity)
+                <div class="activity-item">
+                    <div class="activity-icon {{ $activity['icon'] }}">
+                        <i class="fas {{ $activity['iconFa'] }}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <p class="act-title">{{ $activity['title'] }}</p>
+                        <p class="act-desc">{{ $activity['desc'] }}</p>
+                        <p class="act-time">{{ $activity['time'] }}</p>
+                    </div>
+                </div>
+                @empty
+                <p style="text-align:center; color:#9ca3af; padding:20px; margin:0;">Belum ada aktivitas</p>
+                @endforelse
+            </div>
         </div>
     </div>
 
-    {{-- Chart Script --}}
+    {{-- Chart Scripts --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const ctx = document.getElementById('activityChart').getContext('2d');
-            const activityChart = new Chart(ctx, {
+            // ==================== CHART 1: Line Chart - Aktivitas 7 Hari ====================
+            const ctx1 = document.getElementById('activityChart').getContext('2d');
+            new Chart(ctx1, {
                 type: 'line',
                 data: {
                     labels: {!! json_encode($weeklyActivity['labels'] ?? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']) !!},
@@ -751,21 +801,142 @@
                         borderColor: '#185FA5',
                         backgroundColor: 'rgba(24, 95, 165, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }, {
                         label: 'Pemakaian',
                         data: {!! json_encode($weeklyActivity['pemakaian'] ?? [0, 0, 0, 0, 0, 0, 0]) !!},
                         borderColor: '#A32D2D',
                         backgroundColor: 'rgba(163, 45, 45, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }, {
                         label: 'Penjualan',
                         data: {!! json_encode($weeklyActivity['penjualan'] ?? [0, 0, 0, 0, 0, 0, 0]) !!},
                         borderColor: '#059669',
                         backgroundColor: 'rgba(5, 150, 105, 0.1)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: { size: 11 },
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 12 },
+                            bodyFont: { size: 11 },
+                            padding: 10,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.03)' },
+                            ticks: { 
+                                font: { size: 10 },
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+
+            // ==================== CHART 2: Doughnut Chart - Distribusi Kategori ====================
+            const ctx2 = document.getElementById('kategoriChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: {!! json_encode($kategoriDistribusi['labels'] ?? []) !!},
+                    datasets: [{
+                        data: {!! json_encode($kategoriDistribusi['data'] ?? []) !!},
+                        backgroundColor: {!! json_encode($kategoriDistribusi['colors'] ?? []) !!},
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: { size: 10 },
+                                boxWidth: 12,
+                                padding: 8,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 11 },
+                            bodyFont: { size: 11 },
+                            padding: 8,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const value = context.parsed;
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return context.label + ': ' + value + ' item (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    },
+                    cutout: '55%'
+                }
+            });
+
+            // ==================== CHART 3: Bar Chart - Perbandingan Bulanan ====================
+            const ctx3 = document.getElementById('monthlyChart').getContext('2d');
+            new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode($monthlyComparison['labels'] ?? []) !!},
+                    datasets: [{
+                        label: 'Pembelian',
+                        data: {!! json_encode($monthlyComparison['pembelian'] ?? []) !!},
+                        backgroundColor: '#185FA5',
+                        borderRadius: 4,
+                        borderSkipped: false
+                    }, {
+                        label: 'Penerimaan',
+                        data: {!! json_encode($monthlyComparison['penerimaan'] ?? []) !!},
+                        backgroundColor: '#0F6E56',
+                        borderRadius: 4,
+                        borderSkipped: false
+                    }, {
+                        label: 'Pemakaian',
+                        data: {!! json_encode($monthlyComparison['pemakaian'] ?? []) !!},
+                        backgroundColor: '#A32D2D',
+                        borderRadius: 4,
+                        borderSkipped: false
                     }]
                 },
                 options: {
@@ -775,21 +946,88 @@
                         legend: {
                             position: 'top',
                             labels: {
-                                font: { size: 11 },
+                                font: { size: 10 },
                                 usePointStyle: true,
-                                pointStyle: 'circle'
+                                pointStyle: 'rectRounded',
+                                padding: 10
                             }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            bodyFont: { size: 11 },
+                            padding: 8,
+                            cornerRadius: 6
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
-                            grid: { color: 'rgba(0,0,0,0.02)' },
-                            ticks: { font: { size: 10 } }
+                            grid: { color: 'rgba(0,0,0,0.03)' },
+                            ticks: { 
+                                font: { size: 9 },
+                                stepSize: 1
+                            }
                         },
                         x: {
                             grid: { display: false },
-                            ticks: { font: { size: 10 } }
+                            ticks: { font: { size: 9 } }
+                        }
+                    }
+                }
+            });
+
+            // ==================== CHART 4: Horizontal Bar - Top 10 Stok ====================
+            const topStokLabels = {!! json_encode($topStokBarang['labels'] ?? []) !!};
+            const topStokData = {!! json_encode($topStokBarang['data'] ?? []) !!};
+
+            // Generate gradient colors based on value
+            const gradientColors = topStokData.map((val, i) => {
+                const opacity = 0.4 + (i / topStokData.length) * 0.6;
+                return `rgba(99, 102, 241, ${opacity})`;
+            });
+
+            const ctx4 = document.getElementById('topStokChart').getContext('2d');
+            new Chart(ctx4, {
+                type: 'bar',
+                data: {
+                    labels: topStokLabels,
+                    datasets: [{
+                        label: 'Total Stok',
+                        data: topStokData,
+                        backgroundColor: gradientColors,
+                        borderRadius: 4,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            bodyFont: { size: 11 },
+                            padding: 8,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Stok: ' + context.parsed.x.toLocaleString() + ' item';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.03)' },
+                            ticks: { font: { size: 9 } }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { font: { size: 9 } }
                         }
                     }
                 }
