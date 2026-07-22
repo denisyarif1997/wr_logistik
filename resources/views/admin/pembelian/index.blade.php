@@ -3,5 +3,4 @@
     <div>
         @livewire('pembelian')
     </div>
-    @livewireScripts
-</x-admin> 
+</x-admin>

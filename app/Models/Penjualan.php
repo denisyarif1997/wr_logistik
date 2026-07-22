@@ -66,4 +66,10 @@ class Penjualan extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
+
+    public function jurnal()
+    {
+        return $this->hasOne(Jurnal::class, 'referensi_id')
+            ->where('referensi_tipe', 'Penjualan');
+    }
 }

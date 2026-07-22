@@ -40,11 +40,20 @@
 @endphp
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background-color: #F6F6F3;">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
     <title>{{ $title ?? 'Dashboard' }} | {{ config('app.name') }}</title>
+
+    <!-- Anti-flash critical CSS - NOT in persist so it always applies on SPA navigation -->
+    <style>
+        html, body, .wrapper, .content-wrapper, section.content,
+        .main-sidebar, .main-header, .main-footer {
+            background-color: #F6F6F3 !important;
+        }
+    </style>
 
     <!-- Preconnect for faster font loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,6 +73,7 @@
     <link rel="stylesheet" href="{{ asset('admin/plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/dist/css/toastr.min.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4@5/bundle.css">
+    @livewireStyles
 
     <!-- Modern Minimalist Style — "Receipt Paper" identity for POS -->
     <style>
@@ -121,7 +131,6 @@
             background: var(--bg-light);
             color: var(--text-dark);
             font-size: 12.5px;
-            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* Numeric / price / stat treatment — the signature detail for a POS app */
@@ -177,7 +186,6 @@
             font-size: 1.05rem;
             letter-spacing: -0.01em;
             color: var(--text-dark) !important;
-            transition: opacity 0.2s;
         }
 
         .main-sidebar .brand-link i {
@@ -205,8 +213,6 @@
         .user-panel img {
             border: 2px solid var(--bg-card);
             box-shadow: 0 0 0 1.5px var(--primary);
-            transition: transform 0.2s;
-            will-change: transform;
         }
 
         .user-panel:hover img {
@@ -233,7 +239,6 @@
             padding: 0.55rem 0.75rem;
             font-weight: 500;
             border-left: 3px solid transparent;
-            transition: all 0.18s;
         }
 
         .nav-sidebar > .nav-item > .nav-link i {
@@ -242,7 +247,6 @@
             width: 18px;
             text-align: center;
             color: var(--text-light);
-            transition: color 0.18s;
         }
 
         .nav-sidebar > .nav-item > .nav-link:hover {
@@ -298,7 +302,6 @@
             font-weight: 500;
             padding: 0.35rem 0.7rem;
             border-radius: 8px;
-            transition: all 0.18s;
         }
 
         .main-header .navbar-nav .nav-link:hover {
@@ -346,7 +349,6 @@
         .breadcrumb-item a {
             color: var(--text-light);
             text-decoration: none;
-            transition: color 0.2s;
         }
         .breadcrumb-item a:hover { color: var(--primary); }
         .breadcrumb-item.active {
@@ -360,7 +362,6 @@
             box-shadow: var(--shadow-sm);
             border-radius: 14px;
             background: var(--bg-card);
-            transition: box-shadow 0.2s;
         }
 
         .card:hover {
@@ -391,7 +392,6 @@
             font-weight: 600;
             font-size: 0.75rem;
             border: none;
-            transition: all 0.18s;
         }
 
         .btn-primary {
@@ -401,29 +401,23 @@
 
         .btn-primary:hover {
             background: var(--primary-dark);
-            box-shadow: var(--shadow-md);
-            transform: translateY(-1px);
         }
 
         .btn-success {
             background: var(--success);
-            box-shadow: var(--shadow-sm);
         }
 
         .btn-success:hover {
-            transform: translateY(-1px);
             filter: brightness(1.06);
         }
 
         .btn-warning {
             background: var(--warning);
             color: #fff;
-            box-shadow: var(--shadow-sm);
         }
 
         .btn-danger {
             background: var(--danger);
-            box-shadow: var(--shadow-sm);
         }
 
         .btn-outline-primary {
@@ -450,9 +444,6 @@
             padding: 0.65rem 0.8rem;
         }
 
-        .table tbody tr {
-            transition: background-color 0.15s;
-        }
 
         .table tbody tr:hover {
             background: var(--primary-light);
@@ -539,14 +530,56 @@
             padding: 1.25rem;
         }
 
-        /* ===== ANIMATIONS ===== */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(2px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* ===== SPA NAVIGATION ===== */
+        /* Prevent flash during Livewire SPA navigation */
+        [wire\:loading], [wire\:loading\.delay], [wire\:loading\.inline-block],
+        [wire\:loading\.inline], [wire\:loading\.block], [wire\:loading\.flex],
+        [wire\:loading\.table], [wire\:loading\.grid], [wire\:loading\.inline-flex] {
+            display: none !important;
         }
 
-        .content > * {
-            animation: fadeIn 0.25s ease;
+        /* Solid background on elements that get replaced during SPA navigation */
+        html {
+            background-color: #F6F6F3 !important;
+        }
+        body {
+            background-color: #F6F6F3 !important;
+        }
+        .wrapper {
+            background-color: #F6F6F3;
+        }
+        .content-wrapper {
+            background-color: #F6F6F3 !important;
+        }
+        section.content {
+            background-color: #F6F6F3;
+            min-height: 200px;
+        }
+
+        .spa-navigation-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #F6F6F3;
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        .spa-navigation-overlay.is-visible {
+            display: flex;
+        }
+
+        /* Override AdminLTE white flash - only layout elements, not notifications */
+        .hold-transition,
+        .hold-transition .wrapper,
+        .hold-transition .main-sidebar,
+        .hold-transition .main-header,
+        .hold-transition .content-wrapper,
+        .hold-transition .main-footer {
+            transition: none !important;
         }
 
         /* ===== SCROLLBAR ===== */
@@ -568,7 +601,6 @@
 
         .card, .btn, .nav-link {
             backface-visibility: hidden;
-            transform: translateZ(0);
         }
 
         /* Form Controls Dark Mode */
@@ -632,8 +664,11 @@
 
 <body class="hold-transition sidebar-mini layout-fixed theme-{{ Auth::user()->theme ?? 'default' }}" data-theme="{{ Auth::user()->mode ?? 'light' }}">
     <div class="wrapper">
+        @persist('navbar')
         <x-navbar />
+        @endpersist
 
+        @persist('sidebar')
         <aside class="main-sidebar elevation-0">
             <a href="{{ route('admin.dashboard') }}" class="brand-link">
                 <i class="fas fa-shipping-fast mr-2"></i>
@@ -657,6 +692,7 @@
                 <x-sidebar />
             </div>
         </aside>
+        @endpersist
 
         <div class="content-wrapper">
             <section class="content-header">
@@ -680,13 +716,22 @@
             </section>
         </div>
 
+        @persist('footer')
         <footer class="main-footer">
             <div class="receipt-divider mb-2"></div>
             <strong>© 2023–{{ date('Y') }} <a href="https://denisyarif1997.github.io/Portfolio/" target="_blank">Deni Sarifudin</a></strong>
             <span class="ml-2">| Logistics Management System</span>
         </footer>
+        @endpersist
     </div>
 
+    @persist('spa-navigation-overlay')
+    <div id="spa-navigation-overlay" class="spa-navigation-overlay" role="status" aria-live="polite">
+        Memuat halaman...
+    </div>
+    @endpersist
+
+    @persist('scripts')
     <script src="{{ asset('admin/plugins/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('admin/plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('admin/plugins/datatables/jquery.dataTables.min.js') }}"></script>
@@ -695,8 +740,11 @@
     <script src="{{ asset('admin/plugins/datatables-buttons/js/dataTables.buttons.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ asset('admin/dist/js/adminlte.min.js') }}"></script>
+    @endpersist
 
-    <script>
+    @livewireScripts
+
+    <script data-navigate-once>
         // SweetAlert2 notification helper (Toast)
         function showNotification(message, type = 'success', title = null) {
             if (!message) return;
@@ -787,11 +835,39 @@
             @endif
         });
 
-        // Sidebar active state (optimized)
-        $(document).ready(function() {
-            $('.nav-sidebar .nav-link').on('click', function() {
-                $('.nav-sidebar .nav-link').removeClass('active');
-                $(this).addClass('active');
+        // The sidebar is persisted by Livewire during SPA navigation.  Do not
+        // re-initialize AdminLTE widgets here: doing so redraws the sidebar
+        // and causes a visible flash after each navigation.
+        function updateSidebarActiveState() {
+            var currentPath = window.location.pathname.replace(/\/$/, '');
+            var $links = $('.nav-sidebar .nav-link[href]:not([href="#"])');
+            var $currentLink = $links.filter(function() {
+                var linkPath = new URL(this.href, window.location.origin).pathname.replace(/\/$/, '');
+                return linkPath === currentPath;
+            }).first();
+
+            if (!$currentLink.length) return;
+
+            $links.removeClass('active');
+            $currentLink.addClass('active');
+            $currentLink.closest('.nav-treeview').siblings('.nav-link').addClass('active');
+        }
+
+        $(document).on('click', '.nav-sidebar .nav-link[href]:not([href="#"])', function() {
+            $('.nav-sidebar .nav-link[href]:not([href="#"])').removeClass('active');
+            $(this).addClass('active');
+            $(this).closest('.nav-treeview').siblings('.nav-link').addClass('active');
+        });
+
+        document.addEventListener('livewire:navigated', updateSidebarActiveState);
+
+        document.addEventListener('livewire:navigating', function() {
+            document.getElementById('spa-navigation-overlay')?.classList.add('is-visible');
+        });
+
+        document.addEventListener('livewire:navigated', function() {
+            requestAnimationFrame(function() {
+                document.getElementById('spa-navigation-overlay')?.classList.remove('is-visible');
             });
         });
     </script>

@@ -1,3 +1,52 @@
+{{-- Payment Modal --}}
+<div>
+@if($viewPenjualan)
+<div class="modal fade" id="modalBayar{{ $viewPenjualan->id }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bayar Penjualan {{ $viewPenjualan->no_penjualan }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Total Penjualan</label>
+                    <input type="text" class="form-control" value="Rp {{ number_format($viewPenjualan->total,0,',','.') }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Sudah Bayar</label>
+                    <input type="text" class="form-control" value="Rp {{ number_format($viewPenjualan->bayar,0,',','.') }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Kurang Bayar</label>
+                    <input type="text" class="form-control" value="Rp {{ number_format($viewPenjualan->total - $viewPenjualan->bayar,0,',','.') }}" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Jumlah Bayar</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend"><span class="input-group-text">Rp</span></div>
+                        <input type="number" class="form-control" wire:model="jumlahBayar" 
+                               min="0" max="{{ $viewPenjualan->total - $viewPenjualan->bayar }}" 
+                               placeholder="Masukkan jumlah pembayaran">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" 
+                        wire:click="bayarPenjualan({{ $viewPenjualan->id }})"
+                        wire:loading.attr="disabled"
+                        onclick="return confirm('Proses pembayaran ini?')">
+                    <i class="fas fa-check"></i> Proses Pembayaran
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 <div>
     <div class="row">
         {{-- KOLOM KIRI: INPUT & CART --}}
@@ -168,7 +217,7 @@
 
         {{-- KOLOM KANAN: TOTAL & BAYAR --}}
         <div class="col-md-4">
-            <div class="card card-success">
+            <div class="card card-teal-400">
                 <div class="card-header">
                     <h3 class="card-title">Pembayaran</h3>
                 </div>
@@ -227,15 +276,56 @@
                     </div>
 
                     @if(!$isView)
-                        <button class="btn btn-success btn-block btn-lg" wire:click="bayarSekarang"
-                                {{ count($cart) == 0 ? 'disabled' : '' }}>
-                            <i class="fas fa-cash-register"></i> BAYAR & SIMPAN
-                        </button>
-                        <button class="btn btn-default btn-block mt-2" wire:click="clearCart">Bersihkan</button>
+                        @if($isEdit)
+                            <button class="btn btn-warning btn-block btn-lg" wire:click="updatePenjualan"
+                                    {{ count($cart) == 0 ? 'disabled' : '' }}>
+                                <i class="fas fa-save"></i> UPDATE PENJUALAN
+                            </button>
+                            <button class="btn btn-secondary btn-block mt-2" wire:click="clearCart">Batal Edit</button>
+                        @else
+                            <button class="btn btn-success btn-block btn-lg" wire:click="bayarSekarang"
+                                    {{ count($cart) == 0 ? 'disabled' : '' }}>
+                                <i class="fas fa-cash-register"></i> BAYAR & SIMPAN
+                            </button>
+                            <button class="btn btn-info btn-block mt-2" wire:click="simpanDraft"
+                                    {{ count($cart) == 0 ? 'disabled' : '' }}>
+                                <i class="fas fa-save"></i> SIMPAN DRAFT
+                            </button>
+                            <button class="btn btn-default btn-block mt-2" wire:click="clearCart">Bersihkan</button>
+                        @endif
                     @else
-                        <a href="{{ route('admin.kasir.print', $viewPenjualan->id) }}" target="_blank" class="btn btn-primary btn-block btn-lg">
+                        @if($viewPenjualan && $viewPenjualan->status != 'selesai')
+                            @if($viewPenjualan->status == 'draft')
+                                <button class="btn btn-primary btn-block btn-lg" wire:click="kunciPenjualan({{ $viewPenjualan->id }})"
+                                        onclick="return confirm('Kunci penjualan ini? Status akan berubah menjadi kunci.')">
+                                    <i class="fas fa-lock"></i> KUNCI PENJUALAN
+                                </button>
+                            @endif
+                            @if($viewPenjualan->bayar < $viewPenjualan->total)
+                                <div class="alert alert-warning mt-2">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    Penjualan ini belum lunas. Total: Rp {{ number_format($viewPenjualan->total,0,',','.') }}, 
+                                    Bayar: Rp {{ number_format($viewPenjualan->bayar,0,',','.') }}, 
+                                    Kurang: Rp {{ number_format($viewPenjualan->total - $viewPenjualan->bayar,0,',','.') }}
+                                </div>
+                                <button class="btn btn-success btn-block btn-lg mt-2" 
+                                        onclick="$('#modalBayar{{ $viewPenjualan->id }}').modal('show')">
+                                    <i class="fas fa-money-bill-wave"></i> BAYAR SEKARANG
+                                </button>
+                            @endif
+                            @if($viewPenjualan->bayar >= $viewPenjualan->total)
+                                <button class="btn btn-success btn-block mt-2" wire:click="tutupPenjualan({{ $viewPenjualan->id }})"
+                                        onclick="return confirm('Tutup penjualan ini? Status akan berubah menjadi selesai.')">
+                                    <i class="fas fa-check"></i> TUTUP PENJUALAN
+                                </button>
+                            @endif
+                        @endif
+                        <a href="{{ route('admin.kasir.print', $viewPenjualan->id) }}" target="_blank" class="btn btn-primary btn-block btn-lg mt-2">
                             <i class="fas fa-print"></i> Cetak Billing
                         </a>
+                        <button type="button" class="btn btn-secondary btn-block btn-lg mt-2" wire:click="resetKasir">
+                            <i class="fas fa-undo"></i> Reset
+                        </button>
                     @endif
                 </div>
             </div>
@@ -271,4 +361,161 @@
             @endif
         </div>
     </div>
+
+    {{-- Return History Modal --}}
+    @if($showReturnHistoryModal)
+        <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background: rgba(0,0,0,.5);">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Histori Retur: {{ $selectedReturnSale->no_penjualan ?? '-' }}</h5>
+                        <button type="button" class="close" wire:click="closeReturnHistory" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>Barang</th>
+                                        <th>Gudang</th>
+                                        <th>Masuk</th>
+                                        <th>Keluar</th>
+                                        <th>Stok Akhir</th>
+                                        <th>Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($returnHistory as $history)
+                                        <tr>
+                                            <td>{{ $history->tanggal->format('d-m-Y') }}</td>
+                                            <td>{{ $history->barang->nama_barang ?? '-' }}</td>
+                                            <td>{{ $history->gudang->nama_gudang ?? '-' }}</td>
+                                            <td>{{ number_format($history->qty_masuk, 0, ',', '.') }}</td>
+                                            <td>{{ number_format($history->qty_keluar, 0, ',', '.') }}</td>
+                                            <td>{{ number_format($history->stok_akhir, 0, ',', '.') }}</td>
+                                            <td>{{ $history->keterangan }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="7" class="text-center">Tidak ada histori retur.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" wire:click="closeReturnHistory">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- DAFTAR PENJUALAN --}}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Daftar Penjualan</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input wire:model.defer="search" wire:keydown.enter="$refresh" type="text" class="form-control" placeholder="Cari no penjualan...">
+                                <div class="input-group-append">
+                                    <button wire:click="$refresh" class="btn btn-primary" type="button">
+                                        <i class="fas fa-search"></i> Cari
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" wire:model="startDate">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" wire:model="endDate">
+                        </div>
+                        <div class="col-md-2">
+                            <button wire:click="$refresh" class="btn btn-info btn-block"><i class="fas fa-filter"></i> Filter</button>
+                        </div>
+                    </div>
+
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>No Penjualan</th>
+                                <th>Waktu</th>
+                                <th>Gudang</th>
+                                <th>Total</th>
+                                <th>Bayar</th>
+                                <th>Kembalian</th>
+                                <th>Status</th>
+                                <th>Kasir</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($penjualans as $p)
+                                <tr>
+                                    <td>{{ $p->no_penjualan }}</td>
+                                    <td>
+                                        {{ $p->created_at->timezone('Asia/Jakarta')->format('d-m-Y H:i:s') }}
+                                    </td>
+                                    <td>{{ $p->gudang->nama_gudang ?? '-' }}</td>
+                                    <td class="text-right">{{ number_format($p->total, 0, ',', '.') }}</td>
+                                    <td class="text-right">{{ number_format($p->bayar, 0, ',', '.') }}</td>
+                                    <td class="text-right">{{ number_format($p->kembalian, 0, ',', '.') }}</td>
+                                     <td>
+                                         @php
+                                             $statusClass = 'secondary';
+                                             if($p->status == 'selesai') $statusClass = 'success';
+                                             elseif($p->status == 'kunci') $statusClass = 'info';
+                                             elseif($p->status == 'draft') $statusClass = 'warning';
+                                             elseif($p->status == 'batal') $statusClass = 'danger';
+                                         @endphp
+                                         <span class="badge badge-{{ $statusClass }}">
+                                             {{ ucfirst($p->status) }}
+                                         </span>
+                                     </td>
+                                     <td>{{ $p->creator->name ?? '-' }}</td>
+                                     <td>
+                                         <a href="{{ route('admin.kasir.index', ['view' => $p->id]) }}" class="btn btn-sm btn-secondary">
+                                             <i class="fas fa-eye"></i>
+                                         </a>
+                                         @if($p->status == 'draft' || $p->status == 'kunci')
+                                             <a href="{{ route('admin.kasir.index', ['edit' => $p->id]) }}" class="btn btn-sm btn-warning">
+                                                 <i class="fas fa-edit"></i>
+                                             </a>
+                                             <button class="btn btn-sm btn-danger" wire:click="returPenjualan({{ $p->id }})"
+                                                     onclick="return confirm('Retur penjualan ini? Stok akan dikembalikan.')">
+                                                 <i class="fas fa-undo"></i>
+                                             </button>
+                                         @endif
+                                         <a href="{{ route('admin.kasir.print', $p->id) }}" target="_blank" class="btn btn-sm btn-info">
+                                             <i class="fas fa-print"></i>
+                                         </a>
+                                         <button class="btn btn-sm btn-secondary" wire:click="viewReturnHistory({{ $p->id }})" type="button">
+                                             <i class="fas fa-history"></i>
+                                         </button>
+                                     </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="text-center">Tidak ada data penjualan.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+
+                    {{ $penjualans->links() }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </div>

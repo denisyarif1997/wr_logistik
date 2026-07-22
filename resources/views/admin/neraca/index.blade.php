@@ -3,5 +3,4 @@
     <div>
         @livewire('neraca')
     </div>
-    @livewireScripts
 </x-admin>

@@ -2,7 +2,7 @@
 
 namespace App\View\Components;
 
-use App\Models\{Barang, Pembelian, Penerimaan, Pemakaian, Pembayaran, Stok, Gudang, User};
+use App\Models\{Barang, Pembelian, Penerimaan, Pemakaian, Pembayaran, Stok, Gudang, User, Penjualan};
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
@@ -101,6 +101,23 @@ class Dashboard extends Component
         });
         view()->share('stokPerGudang', $stokPerGudang);
 
+        // --- SALES DATA ---
+        // Total Penjualan
+        $totalPenjualan = $this->getCachedCount('dashboard.penjualan_count', fn() => Penjualan::count());
+        view()->share('totalPenjualan', $totalPenjualan);
+
+        // Total Omzet (total sales)
+        $totalOmzet = $this->getCachedData('dashboard.total_omzet', fn() => Penjualan::sum('total'));
+        view()->share('totalOmzet', $totalOmzet);
+
+        // Recent Penjualan
+        $recentPenjualan = Penjualan::with('gudang:id,nama_gudang')
+            ->select('id', 'no_penjualan', 'gudang_id', 'tanggal', 'total', 'status')
+            ->latest('tanggal')
+            ->take(5)
+            ->get();
+        view()->share('recentPenjualan', $recentPenjualan);
+
         // --- WEEKLY ACTIVITY DATA (untuk chart) ---
         $weeklyActivity = $this->getWeeklyActivityData();
         view()->share('weeklyActivity', $weeklyActivity);
@@ -118,6 +135,7 @@ class Dashboard extends Component
                 'labels' => ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
                 'penerimaan' => [],
                 'pemakaian' => [],
+                'penjualan' => [],
             ];
 
             // Get data for last 7 days
@@ -126,9 +144,11 @@ class Dashboard extends Component
                 
                 $penerimaanCount = Penerimaan::whereDate('tanggal_terima', $date)->count();
                 $pemakaianCount = Pemakaian::whereDate('tanggal_pakai', $date)->count();
+                $penjualanCount = Penjualan::whereDate('tanggal', $date)->count();
                 
                 $data['penerimaan'][] = $penerimaanCount;
                 $data['pemakaian'][] = $pemakaianCount;
+                $data['penjualan'][] = $penjualanCount;
             }
 
             return $data;

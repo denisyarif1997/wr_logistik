@@ -3,5 +3,4 @@
     <div>
         @livewire('jurnal')
     </div>
-    @livewireScripts
-</x-admin> 
+</x-admin>

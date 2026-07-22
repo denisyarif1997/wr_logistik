@@ -3,5 +3,4 @@
     <div>
         @livewire('postingan')
     </div>
-    @livewireScripts
-</x-admin> 
+</x-admin>

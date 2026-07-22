@@ -48,7 +48,7 @@
                                             <td colspan="3" class="text-center">Tidak ada data aset.</td>
                                         </tr>
                                     @endforelse
-                                    <tr class="font-weight-bold bg-light">
+                                    <tr class="font-weight-bold bg-primary">
                                         <td colspan="2">Total Aset</td>
                                         <td class="text-right">{{ number_format($totalAset, 2) }}</td>
                                     </tr>
@@ -73,7 +73,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="bg-light">
+                                    <tr class="bg-info">
                                         <td colspan="3"><strong>LIABILITAS</strong></td>
                                     </tr>
                                     @forelse($liabilitasData as $item)
@@ -87,12 +87,12 @@
                                             <td colspan="3" class="text-center">Tidak ada data liabilitas.</td>
                                         </tr>
                                     @endforelse
-                                    <tr class="font-weight-bold bg-light">
+                                    <tr class="font-weight-bold bg-info">
                                         <td colspan="2">Total Liabilitas</td>
                                         <td class="text-right">{{ number_format($totalLiabilitas, 2) }}</td>
                                     </tr>
                                     
-                                    <tr class="bg-light">
+                                    <tr class="bg-info">
                                         <td colspan="3"><strong>EKUITAS</strong></td>
                                     </tr>
                                     @forelse($ekuitasData as $item)
@@ -110,7 +110,7 @@
                                         <td colspan="2">Laba Rugi Ditambah</td>
                                         <td class="text-right">{{ number_format($labaRugiPeriode, 2) }}</td>
                                     </tr>
-                                    <tr class="font-weight-bold bg-light">
+                                    <tr class="font-weight-bold bg-info">
                                         <td colspan="2">Total Ekuitas</td>
                                         <td class="text-right">{{ number_format($totalEkuitas, 2) }}</td>
                                     </tr>

@@ -3,5 +3,4 @@
     <div>
         @livewire('stok')
     </div>
-    @livewireScripts
-</x-admin> 
+</x-admin>

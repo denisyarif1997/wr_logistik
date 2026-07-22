@@ -112,7 +112,7 @@
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
-                                        @if(!$pembayaran)
+                                        {{-- @if(!$pembayaran)
                                             <button wire:click="edit({{ $penerimaan->id }})" class="btn btn-warning" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </button>
@@ -120,7 +120,7 @@
                                                 onclick="return confirm('Yakin hapus data penerimaan ini?');" title="Hapus">
                                                 <i class="fas fa-trash"></i>
                                             </button> -->
-                                        @endif
+                                        @endif --}}
                                     </div>
                                 </td>
                             </tr>

@@ -3,5 +3,4 @@
     <div>
         @livewire('gudang')
     </div>
-    @livewireScripts
-</x-admin> 
+</x-admin>

@@ -3,5 +3,4 @@
     <div>
         @livewire('kasir')
     </div>
-    @livewireScripts
 </x-admin>

@@ -3,5 +3,4 @@
     <div>
         @livewire('pengaturan')
     </div>
-    @livewireScripts
 </x-admin>

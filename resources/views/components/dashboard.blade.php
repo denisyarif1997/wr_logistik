@@ -365,11 +365,11 @@
             </div>
         </div>
         <div class="summary-card amber">
-            <p class="summary-title">Total Hutang</p>
-            <div class="summary-value">Rp {{ number_format($totalHutang / 1000000, 1) }}jt</div>
-            <p class="summary-desc">Belum lunas</p>
+            <p class="summary-title">Total Omzet</p>
+            <div class="summary-value">Rp {{ number_format($totalOmzet / 1000000, 1) }}jt</div>
+            <p class="summary-desc">Total penjualan</p>
             <div class="progress-bar">
-                <div class="progress-fill" style="width: {{ min(100, $totalHutang / 100000000) }}%"></div>
+                <div class="progress-fill" style="width: {{ min(100, $totalOmzet / 100000000) }}%"></div>
             </div>
         </div>
     </div>
@@ -439,6 +439,15 @@
             </span>
             <span class="sc-link">Lihat detail <i class="fas fa-arrow-right" style="font-size:9px"></i></span>
         </a>
+        <a href="{{ route('admin.kasir.index') }}" class="stat-card accent-emerald">
+            <i class="fas fa-shopping-bag sc-icon"></i>
+            <span class="sc-val">{{ number_format($totalPenjualan) }}</span>
+            <span class="sc-lbl">Total penjualan</span>
+            <span class="sc-trend positive">
+                <i class="fas fa-arrow-up"></i> +10% dari bulan lalu
+            </span>
+            <span class="sc-link">Lihat detail <i class="fas fa-arrow-right" style="font-size:9px"></i></span>
+        </a>
         <div class="stat-card accent-gray">
             <i class="fas fa-users sc-icon"></i>
             <span class="sc-val">{{ number_format($user) }}</span>
@@ -501,6 +510,10 @@
                 <a href="{{ route('admin.pemakaian.index') }}" class="quick-action-btn">
                     <i class="fas fa-dolly"></i>
                     <span>Pemakaian</span>
+                </a>
+                <a href="{{ route('admin.kasir.index') }}" class="quick-action-btn">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>Penjualan</span>
                 </a>
                 <a href="{{ route('admin.pembayaran.index') }}" class="quick-action-btn">
                     <i class="fas fa-money-bill"></i>
@@ -660,6 +673,49 @@
         </div>
     </div>
 
+    {{-- Penjualan Terbaru --}}
+    <div class="dash-panel">
+        <div class="dash-panel-head">
+            <div class="dash-panel-head-left">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Penjualan terbaru</span>
+            </div>
+            <a href="{{ route('admin.kasir.index') }}" class="view-all">Lihat semua</a>
+        </div>
+        <table class="dash-tbl">
+            <thead>
+                <tr>
+                    <th>No Penjualan</th>
+                    <th>Gudang</th>
+                    <th>Tanggal</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($recentPenjualan as $jual)
+                <tr>
+                    <td><strong>{{ $jual->no_penjualan }}</strong></td>
+                    <td>{{ $jual->gudang->nama_gudang ?? '-' }}</td>
+                    <td>{{ $jual->tanggal ? \Carbon\Carbon::parse($jual->tanggal)->format('d/m/Y') : '-' }}</td>
+                    <td>Rp {{ number_format($jual->total / 1000000, 1) }}jt</td>
+                    <td>
+                        @if($jual->status == 'selesai')
+                            <span class="dbadge dbadge-green">Selesai</span>
+                        @elseif($jual->status == 'pending')
+                            <span class="dbadge dbadge-amber">Pending</span>
+                        @else
+                            <span class="dbadge dbadge-blue">{{ ucfirst($jual->status) }}</span>
+                        @endif
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="5" class="empty-td">Belum ada data penjualan</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
     {{-- Stok Per Gudang --}}
     <div class="dash-panel">
         <div class="dash-panel-head">
@@ -701,6 +757,13 @@
                         data: {!! json_encode($weeklyActivity['pemakaian'] ?? [0, 0, 0, 0, 0, 0, 0]) !!},
                         borderColor: '#A32D2D',
                         backgroundColor: 'rgba(163, 45, 45, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Penjualan',
+                        data: {!! json_encode($weeklyActivity['penjualan'] ?? [0, 0, 0, 0, 0, 0, 0]) !!},
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
                         tension: 0.4,
                         fill: true
                     }]

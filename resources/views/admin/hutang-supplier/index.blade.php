@@ -3,5 +3,4 @@
     <div>
         @livewire('hutang-supplier')
     </div>
-    @livewireScripts
 </x-admin>

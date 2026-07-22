@@ -1,8 +1,5 @@
-{{-- Daftar Penjualan --}}
+{{-- Redirect to Kasir module --}}
 @php
-    $title = 'Daftar Penjualan';
+    header('Location: ' . route('admin.kasir.index'));
+    exit();
 @endphp
-
-<x-admin>
-    <livewire:daftar-penjualan />
-</x-admin>

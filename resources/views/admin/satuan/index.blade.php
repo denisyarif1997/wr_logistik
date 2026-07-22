@@ -3,5 +3,4 @@
     <div>
         @livewire('satuan')
     </div>
-    @livewireScripts
-</x-admin> 
+</x-admin>

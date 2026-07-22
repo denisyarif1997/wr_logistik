@@ -3,5 +3,4 @@
     <div>
         @livewire('suppliers')
     </div>
-    @livewireScripts
-</x-admin> 
+</x-admin>

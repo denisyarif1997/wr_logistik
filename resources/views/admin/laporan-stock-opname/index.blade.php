@@ -3,5 +3,4 @@
     <div>
         @livewire('laporan-stock-opname')
     </div>
-    @livewireScripts
 </x-admin>

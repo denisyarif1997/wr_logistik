@@ -123,13 +123,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(
     });
 
     Route::middleware(['can:kasir'])->group(function(){
-        Route::get('/kasir', function () {
-            return view('admin.kasir.index');
-        })->name('kasir.index');
+        Route::get('/kasir', \App\Livewire\Kasir::class)->name('kasir.index');
         Route::get('/kasir/{id}/print', [App\Http\Controllers\KasirController::class, 'print'])->name('kasir.print');
-        Route::get('/penjualan', function () {
-            return view('admin.penjualan.index');
-        })->name('penjualan.index');
+        Route::get('/penjualan', \App\Livewire\Kasir::class)->name('penjualan.index');
     });
     
     Route::middleware(['can:transfer'])->group(function(){
