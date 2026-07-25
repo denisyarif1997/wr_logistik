@@ -433,9 +433,19 @@ class Penyesuaian extends Component
             }
         }
 
+        $noJurnal = 'ADJ-' . str_pad($penyesuaian->id, 5, '0', STR_PAD_LEFT);
+
         if ($totalNilai > 0) {
+            // Delete any existing journal with the same no_jurnal to prevent
+            // duplicate entry errors (e.g., from manual creation or re-approval)
+            $existingJurnal = Jurnal::where('no_jurnal', $noJurnal)->first();
+            if ($existingJurnal) {
+                $existingJurnal->details()->delete();
+                $existingJurnal->delete();
+            }
+
             $jurnal = Jurnal::create([
-                'no_jurnal' => 'ADJ-' . str_pad($penyesuaian->id, 5, '0', STR_PAD_LEFT),
+                'no_jurnal' => $noJurnal,
                 'tanggal' => $penyesuaian->tanggal,
                 'keterangan' => $jenisLabel . ' - ' . $penyesuaian->no_penyesuaian,
                 'referensi_id' => $penyesuaian->id,
@@ -446,7 +456,7 @@ class Penyesuaian extends Component
             // Get COA from settings
             $coaPersediaan = \App\Models\Setting::getValue('coa_persediaan', 4);
             $coaBeban = \App\Models\Setting::getValue('coa_beban_operasional', 9);
-            
+
             $akunPersediaan = \App\Models\Akun::find($coaPersediaan);
             $akunBeban = \App\Models\Akun::find($coaBeban);
 
@@ -476,30 +486,30 @@ class Penyesuaian extends Component
     {
         // Get all barang
         $barangs = Barang::all();
-        
+
         foreach ($barangs as $barang) {
             // Get all stock entries for this barang to calculate total quantity
             $totalQty = Stok::where('barang_id', $barang->id)->sum('stok_akhir');
-            
+
             if ($totalQty <= 0) {
                 continue;
             }
-            
+
             // Calculate weighted average price from all incoming stock movements
             $kartuStokMasuk = KartuStok::where('barang_id', $barang->id)
                 ->where('jenis_transaksi', 'masuk')
                 ->where('referensi_tipe', 'Penerimaan')
                 ->get();
-            
+
             $totalQtyForAvg = 0;
             $totalValueForAvg = 0;
-            
+
             foreach ($kartuStokMasuk as $kartu) {
                 // Get the penerimaan detail to find the purchase price
                 $penerimaanDetail = PenerimaanDetail::where('penerimaan_id', $kartu->referensi_id)
                     ->where('barang_id', $barang->id)
                     ->first();
-                
+
                 if ($penerimaanDetail) {
                     $harga = $penerimaanDetail->harga_satuan;
                     $qty = $kartu->qty_masuk;
@@ -507,7 +517,7 @@ class Penyesuaian extends Component
                     $totalValueForAvg += $harga * $qty;
                 }
             }
-            
+
             if ($totalQtyForAvg > 0) {
                 $hpp = $totalValueForAvg / $totalQtyForAvg;
                 $barang->hpp = round($hpp, 2);

@@ -37,8 +37,7 @@
                         <th>Stok Min</th>
                         <th>Stok Aktual</th>
                         <th>Harga Beli</th>
-                                                <th>Hpp</th>
-
+                        <th>Hpp</th>
                         <th>Jual?</th>
                         <th>Margin Jual (%)</th>
                         <!-- <th>Created By</th> -->
@@ -74,7 +73,16 @@
                                     <button wire:click="edit({{ $barang->id }})" class="btn btn-sm btn-primary">Edit</button>
                                 @endcan
                                 @can('barang-delete')
-                                    <button wire:click="delete({{ $barang->id }})" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
+                                    {{-- <button wire:click="delete({{ $barang->id }})" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button> --}}
+                                    <button
+    x-on:click.prevent="
+        if (confirm('Anda yakin ingin mengapus data ini, data yang di hapus tidak bisa dikembalikan?')) {
+            $wire.delete({{ $barang->id }});
+        }
+    "
+    class="btn btn-sm btn-danger">
+    Delete
+</button>
                                 @endcan
                             </td>
                         </tr>

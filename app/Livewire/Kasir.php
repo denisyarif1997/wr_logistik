@@ -14,6 +14,7 @@ use App\Models\Jurnal;
 use App\Models\JurnalDetail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -54,8 +55,13 @@ class Kasir extends Component
     public $isEdit = false;
     public $editPenjualanId = null;
     public $piutang_id = null; // Akun piutang untuk penjualan belum lunas
-    public $status = 'draft'; // Status penjualan: draft, kunci, selesai, batal
+    public $status = 'draft'; // Status penjualan: draft (belum lunas/piutang), selesai (lunas), retur.
+                               // Catatan: status "kunci" adalah peninggalan versi lama dan tidak
+                               // dipakai lagi untuk transaksi baru; hanya mungkin muncul di data lama.
     public $jumlahBayar = 0; // Jumlah pembayaran tambahan
+
+    // Guard flag: mencegah eksekusi ganda (double-click / double-submit)
+    public $processing = false;
 
     // Daftar Penjualan properties
     protected $paginationTheme = 'bootstrap';
@@ -67,7 +73,7 @@ class Kasir extends Component
         $this->tanggal = date('Y-m-d');
         $this->startDate = now()->subMonth()->format('Y-m-d');
         $this->endDate = now()->format('Y-m-d');
-        
+
         $firstGudang = Gudang::first();
         $this->gudang_id = $firstGudang ? $firstGudang->id : null;
 
@@ -106,7 +112,7 @@ class Kasir extends Component
                     $stok = Stok::where('barang_id', $detail->barang_id)
                         ->where('gudang_id', $this->gudang_id)
                         ->first();
-                    
+
                     return [
                         'barang_id' => $detail->barang_id,
                         'kode' => $detail->barang->kode_barang ?? '',
@@ -175,6 +181,7 @@ class Kasir extends Component
         $subtotal = $this->getSubTotalProperty();
         $total = $this->getTotalProperty();
         $kembalian = $this->bayar > $total ? $this->bayar - $total : 0;
+        $quickCashOptions = $this->getQuickCashOptionsProperty();
 
         // Get penjualan list
         $penjualans = ModelsPenjualan::with(['gudang', 'creator', 'details'])
@@ -185,7 +192,16 @@ class Kasir extends Component
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        return view('livewire.kasir', compact('gudangs', 'kasAccounts', 'ppnMasters', 'subtotal', 'total', 'kembalian', 'penjualans'));
+        return view('livewire.kasir', compact(
+            'gudangs',
+            'kasAccounts',
+            'ppnMasters',
+            'subtotal',
+            'total',
+            'kembalian',
+            'penjualans',
+            'quickCashOptions'
+        ));
     }
 
     public function getSubTotalProperty()
@@ -203,6 +219,38 @@ class Kasir extends Component
         $ppnValue = $afterDiskon * ($this->ppn_rate / 100);
         $this->ppn_amount = $ppnValue;
         return $afterDiskon + $ppnValue;
+    }
+
+    /**
+     * Standar kasir: sediakan opsi nominal cepat (uang pas + pembulatan ke atas)
+     * supaya kasir tidak perlu mengetik manual setiap transaksi.
+     */
+    public function getQuickCashOptionsProperty()
+    {
+        $total = (float) $this->getTotalProperty();
+        if ($total <= 0) {
+            return [];
+        }
+
+        $options = [(int) ceil($total)]; // uang pas
+        $steps = [5000, 10000, 20000, 50000, 100000];
+
+        foreach ($steps as $step) {
+            $rounded = (int) (ceil($total / $step) * $step);
+            if ($rounded > $total) {
+                $options[] = $rounded;
+            }
+        }
+
+        $options = array_values(array_unique($options));
+        sort($options);
+
+        return array_slice($options, 0, 4);
+    }
+
+    public function setBayar($amount)
+    {
+        $this->bayar = (float) $amount;
     }
 
     public function hitungItemSubtotal($harga, $qty, $diskonPersen)
@@ -281,11 +329,13 @@ class Kasir extends Component
         if (!$barang || !$barang->is_jual) {
             $this->dispatch('notify', message: 'Barang tidak ditemukan atau tidak dapat dijual.', type: 'error');
             $this->barcode = '';
+            $this->dispatch('focus-barcode');
             return;
         }
 
         $this->addToCart($barang);
         $this->barcode = '';
+        $this->dispatch('focus-barcode');
     }
 
     /**
@@ -304,6 +354,9 @@ class Kasir extends Component
         $harga = self::hitungHargaJual($barang);
 
         // Cek stok di gudang terpilih
+        // Catatan: ini adalah cek "soft" untuk UX cepat saat input. Validasi final
+        // (dengan row-lock) tetap dilakukan ulang di validateAndLockStock() saat
+        // transaksi benar-benar disimpan, supaya tidak terjadi overselling.
         $stok = Stok::where('barang_id', $barang->id)
             ->where('gudang_id', $this->gudang_id)
             ->first();
@@ -343,6 +396,8 @@ class Kasir extends Component
             'stok' => $stokAkhir,
             'diskon_persen' => 0,
         ];
+
+        $this->dispatch('focus-barcode');
     }
 
     public function updateQty($key, $qty)
@@ -411,6 +466,8 @@ class Kasir extends Component
             $this->ppn_rate = $defaultPpn->rate;
             $this->ppn_id = $defaultPpn->id;
         }
+
+        $this->dispatch('focus-barcode');
     }
 
     public function resetKasir()
@@ -422,138 +479,183 @@ class Kasir extends Component
 
     public function updatedGudangId()
     {
+        if (!empty($this->cart)) {
+            $this->dispatch(
+                'notify',
+                message: 'Gudang diganti, keranjang otomatis dikosongkan karena stok berbeda per gudang.',
+                type: 'info'
+            );
+        }
         $this->cart = [];
     }
 
-    public function bayarSekarang()
+    /**
+     * Standar kasir: kunci baris stok (row lock) dan validasi ulang jumlah yang
+     * tersedia TEPAT SEBELUM transaksi disimpan. Ini WAJIB dilakukan di dalam
+     * DB::transaction agar tidak terjadi overselling ketika dua kasir menjual
+     * barang yang sama secara bersamaan.
+     *
+     * @throws \Exception jika stok tidak mencukupi
+     * @return array<int, Stok> map barang_id => model Stok yang sudah dikunci
+     */
+    private function validateAndLockStock(array $cart, $gudangId): array
     {
-        $this->validate();
-        $total = $this->getTotalProperty();
+        $lockedStocks = [];
 
-        if (empty($this->cart)) {
-            $this->dispatch('notify', message: 'Cart kosong.', type: 'error');
-            return;
-        }
+        // Urutkan berdasarkan barang_id supaya urutan locking konsisten
+        // antar transaksi -> mengurangi risiko deadlock.
+        $sortedCart = collect($cart)->sortBy('barang_id');
 
-        if ($this->bayar < $total) {
-            $this->dispatch('notify', message: 'Uang bayar kurang dari total.', type: 'error');
-            return;
-        }
+        foreach ($sortedCart as $item) {
+            $stok = Stok::where('barang_id', $item['barang_id'])
+                ->where('gudang_id', $gudangId)
+                ->lockForUpdate()
+                ->first();
 
-        if (!$this->kas_id) {
-            $this->dispatch('notify', message: 'Silakan pilih Kas / Rekening tujuan terlebih dahulu.', type: 'error');
-            return;
-        }
+            $stokAkhir = $stok ? $stok->stok_akhir : 0;
 
-        DB::transaction(function () use ($total) {
-            $userId = Auth::id();
-            $kembalian = $this->bayar - $total;
-
-            $noPenjualan = $this->generateNoPenjualan();
-
-            $penjualan = ModelsPenjualan::create([
-                'no_penjualan' => $noPenjualan,
-                'tanggal' => $this->tanggal,
-                'gudang_id' => $this->gudang_id,
-                'kas_id' => $this->kas_id,
-                'diskon' => $this->diskon,
-                'ppn' => $this->ppn_amount,
-                'ppn_rate' => $this->ppn_rate,
-                'total' => $total,
-                'bayar' => $this->bayar,
-                'kembalian' => $kembalian,
-                'status' => 'selesai',
-                'keterangan' => $this->keterangan,
-                'inserted_user' => $userId,
-                'updated_user' => $userId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            foreach ($this->cart as $item) {
-                $penjualan->details()->create([
-                    'barang_id' => $item['barang_id'],
-                    'qty' => $item['qty'],
-                    'harga_satuan' => $item['harga'],
-                    'diskon' => $item['diskon_persen'] ?? 0,
-                    'subtotal' => $item['subtotal'],
-                ]);
-
-                // Kurangi stok
-                $stok = Stok::where('barang_id', $item['barang_id'])
-                    ->where('gudang_id', $this->gudang_id)
-                    ->first();
-                if ($stok) {
-                    $stok->stok_akhir -= $item['qty'];
-                    if ($stok->stok_akhir < 0) {
-                        $stok->stok_akhir = 0;
-                    }
-                    $stok->save();
-
-                    KartuStok::create([
-                        'tanggal' => $this->tanggal,
-                        'barang_id' => $item['barang_id'],
-                        'gudang_id' => $this->gudang_id,
-                        'jenis_transaksi' => 'keluar',
-                        'qty_masuk' => 0,
-                        'qty_keluar' => $item['qty'],
-                        'stok_akhir' => $stok->stok_akhir,
-                        'referensi_id' => $penjualan->id,
-                        'referensi_tipe' => 'Penjualan',
-                        'keterangan' => 'Penjualan ' . $noPenjualan,
-                        'inserted_user' => $userId,
-                    ]);
-                }
+            if ($stokAkhir < $item['qty']) {
+                throw new \RuntimeException(
+                    "Stok {$item['nama']} tidak mencukupi (tersedia: {$stokAkhir}, diminta: {$item['qty']})."
+                );
             }
 
-            // Jurnal: Debit -> Kas, Kredit -> Pendapatan
-            $kas = Akun::find($this->kas_id);
-            $jurnal = Jurnal::create([
-                'no_jurnal' => 'PJL-' . str_pad($penjualan->id, 5, '0', STR_PAD_LEFT),
-                'tanggal' => $this->tanggal,
-                'keterangan' => 'Penjualan ' . $noPenjualan,
-                'referensi_id' => $penjualan->id,
-                'referensi_tipe' => 'Penjualan',
-                'inserted_user' => $userId,
+            $lockedStocks[$item['barang_id']] = $stok;
+        }
+
+        return $lockedStocks;
+    }
+
+    /**
+     * Simpan penjualan — SATU aksi untuk semua kasus.
+     *
+     * Statusnya ditentukan otomatis dari nilai "bayar" yang diisi kasir:
+     * - bayar >= total  -> transaksi LUNAS, status "selesai", kas wajib diisi,
+     *   jurnal: Debit Kas / Kredit Pendapatan.
+     * - bayar <  total  -> transaksi BELUM LUNAS, status "draft" (piutang),
+     *   jurnal: Debit Piutang / Kredit Pendapatan. Sisa tagihan dilunasi
+     *   nanti lewat bayarPenjualan().
+     *
+     * Ini menggantikan bayarSekarang() + simpanDraft() yang sebelumnya
+     * terpisah padahal logikanya nyaris identik dan hanya beda di satu
+     * kondisi (apakah bayar sudah cukup).
+     */
+    public function simpanPenjualan()
+    {
+        // Guard: cegah eksekusi ganda akibat double-click / double-submit
+        if ($this->processing) {
+            return;
+        }
+        $this->processing = true;
+
+        try {
+            $this->validate([
+                'tanggal' => 'required|date',
+                'gudang_id' => 'required|exists:gudang,id',
+                'kas_id' => 'nullable|exists:akun,id',
+                'bayar' => 'required|numeric|min:0',
+                'diskon' => 'nullable|numeric|min:0|max:100',
+                'ppn_rate' => 'nullable|numeric|min:0',
             ]);
 
-            // Get COA from settings
-            $coaPiutang = \App\Models\Setting::getValue('coa_piutang', 10);
-            $coaPendapatan = \App\Models\Setting::getValue('coa_pendapatan_penjualan', 10);
-            
-            $akunKas = Akun::find($this->kas_id);
-            $akunPendapatan = Akun::find($coaPendapatan);
-            
-            $jurnal->details()->create([
-                'akun_id' => $this->kas_id,
-                'nama_akun' => $akunKas ? $akunKas->nama_akun : 'Kas',
-                'debit' => $total,
-                'kredit' => 0,
-            ]);
-            $jurnal->details()->create([
-                'akun_id' => $coaPendapatan,
-                'nama_akun' => $akunPendapatan ? $akunPendapatan->nama_akun : 'Pendapatan Penjualan',
-                'debit' => 0,
-                'kredit' => $total,
-            ]);
+            if (empty($this->cart)) {
+                $this->dispatch('notify', message: 'Cart kosong.', type: 'error');
+                return;
+            }
 
-            $this->lastSale = $penjualan->load('details.barang');
-        });
+            $total = $this->getTotalProperty();
+            $isLunas = $this->bayar >= $total;
 
-        $this->dispatch('notify', message: 'Penjualan berhasil disimpan.', type: 'success');
-        $this->cart = [];
-        $this->bayar = 0;
-        $this->keterangan = '';
-        $this->barcode = '';
-        $this->diskon = 0;
-        $this->ppn_rate = 0;
-        $this->ppn_amount = 0;
-        $this->ppn_id = null;
+            // Kas hanya wajib diisi kalau uangnya benar-benar diterima sekarang (lunas).
+            // Untuk transaksi belum lunas (piutang), kas boleh dikosongkan dulu.
+            if ($isLunas && !$this->kas_id) {
+                $this->dispatch('notify', message: 'Silakan pilih Kas / Rekening tujuan terlebih dahulu.', type: 'error');
+                return;
+            }
 
-        $defaultPpn = Ppn::getCurrentRate();
-        if ($defaultPpn) {
-            $this->ppn_rate = $defaultPpn->rate;
-            $this->ppn_id = $defaultPpn->id;
+            DB::transaction(function () use ($total, $isLunas) {
+                $userId = Auth::id();
+                $kembalian = $isLunas ? $this->bayar - $total : 0;
+
+                // Kunci & validasi ulang stok sebelum memproses transaksi
+                $lockedStocks = $this->validateAndLockStock($this->cart, $this->gudang_id);
+
+                $noPenjualan = $this->generateNoPenjualan();
+
+                $penjualan = ModelsPenjualan::create([
+                    'no_penjualan' => $noPenjualan,
+                    'tanggal' => $this->tanggal,
+                    'gudang_id' => $this->gudang_id,
+                    'kas_id' => $this->kas_id,
+                    'diskon' => $this->diskon,
+                    'ppn' => $this->ppn_amount,
+                    'ppn_rate' => $this->ppn_rate,
+                    'total' => $total,
+                    'bayar' => $this->bayar,
+                    'kembalian' => $kembalian,
+                    'status' => $isLunas ? 'selesai' : 'draft',
+                    'keterangan' => $this->keterangan,
+                    'inserted_user' => $userId,
+                    'updated_user' => $userId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                foreach ($this->cart as $item) {
+                    $penjualan->details()->create([
+                        'barang_id' => $item['barang_id'],
+                        'qty' => $item['qty'],
+                        'harga_satuan' => $item['harga'],
+                        'diskon' => $item['diskon_persen'] ?? 0,
+                        'subtotal' => $item['subtotal'],
+                    ]);
+
+                    // Kurangi stok menggunakan baris yang sudah dikunci
+                    $stok = $lockedStocks[$item['barang_id']] ?? null;
+                    if ($stok) {
+                        $stok->stok_akhir -= $item['qty'];
+                        if ($stok->stok_akhir < 0) {
+                            $stok->stok_akhir = 0;
+                        }
+                        $stok->save();
+
+                        KartuStok::create([
+                            'tanggal' => $this->tanggal,
+                            'barang_id' => $item['barang_id'],
+                            'gudang_id' => $this->gudang_id,
+                            'jenis_transaksi' => 'keluar',
+                            'qty_masuk' => 0,
+                            'qty_keluar' => $item['qty'],
+                            'stok_akhir' => $stok->stok_akhir,
+                            'referensi_id' => $penjualan->id,
+                            'referensi_tipe' => 'Penjualan',
+                            'keterangan' => 'Penjualan ' . $noPenjualan,
+                            'inserted_user' => $userId,
+                        ]);
+                    }
+                }
+
+                // Jurnal ditulis lewat helper yang sama dengan alur pelunasan piutang,
+                // supaya logikanya konsisten di satu tempat saja.
+                $this->updateJurnal($penjualan, $total, $isLunas);
+
+                $this->lastSale = $penjualan->load('details.barang');
+            });
+
+            $this->dispatch(
+                'notify',
+                message: $isLunas ? 'Penjualan berhasil disimpan dan lunas.' : 'Penjualan disimpan, menunggu pelunasan.',
+                type: 'success'
+            );
+            $this->clearCart();
+        } catch (\RuntimeException $e) {
+            // Error bisnis (mis. stok tidak cukup) -> tampilkan pesan apa adanya
+            $this->dispatch('notify', message: $e->getMessage(), type: 'error');
+        } catch (\Throwable $e) {
+            Log::error('Gagal memproses penjualan: ' . $e->getMessage(), ['exception' => $e]);
+            $this->dispatch('notify', message: 'Terjadi kesalahan sistem saat memproses penjualan. Silakan coba lagi.', type: 'error');
+        } finally {
+            $this->processing = false;
         }
     }
 
@@ -562,8 +664,11 @@ class Kasir extends Component
         $today = now()->format('Ymd');
         $prefix = 'PJL-' . $today . '-';
 
+        // lockForUpdate() WAJIB dipanggil di dalam DB::transaction() supaya
+        // dua transaksi yang berjalan bersamaan tidak mendapat nomor yang sama.
         $last = ModelsPenjualan::where('no_penjualan', 'like', $prefix . '%')
             ->orderBy('no_penjualan', 'desc')
+            ->lockForUpdate()
             ->first();
 
         if ($last) {
@@ -578,36 +683,38 @@ class Kasir extends Component
 
     /**
      * Update HPP (Harga Pokok Penjualan) for all barang based on current stock
-     * HPP is calculated as weighted average price from all stock movements
+     * HPP is calculated as weighted average price from all stock movements.
+     *
+     * Catatan: method ini sebelumnya tidak pernah dipanggil di mana pun.
+     * Sebaiknya dijadwalkan sebagai scheduled command/job terpisah (mis.
+     * php artisan schedule) daripada dijalankan sinkron di dalam alur kasir,
+     * karena melakukan looping ke seluruh tabel Barang di sini akan
+     * memperlambat setiap transaksi penjualan.
      */
     private function updateHppForAllBarang()
     {
-        // Get all barang
         $barangs = Barang::all();
-        
+
         foreach ($barangs as $barang) {
-            // Get all stock entries for this barang to calculate total quantity
             $totalQty = Stok::where('barang_id', $barang->id)->sum('stok_akhir');
-            
+
             if ($totalQty <= 0) {
                 continue;
             }
-            
-            // Calculate weighted average price from all incoming stock movements
+
             $kartuStokMasuk = KartuStok::where('barang_id', $barang->id)
                 ->where('jenis_transaksi', 'masuk')
                 ->where('referensi_tipe', 'Penerimaan')
                 ->get();
-            
+
             $totalQtyForAvg = 0;
             $totalValueForAvg = 0;
-            
+
             foreach ($kartuStokMasuk as $kartu) {
-                // Get the penerimaan detail to find the purchase price
                 $penerimaanDetail = \App\Models\PenerimaanDetail::where('penerimaan_id', $kartu->referensi_id)
                     ->where('barang_id', $barang->id)
                     ->first();
-                
+
                 if ($penerimaanDetail) {
                     $harga = $penerimaanDetail->harga_satuan;
                     $qty = $kartu->qty_masuk;
@@ -615,7 +722,7 @@ class Kasir extends Component
                     $totalValueForAvg += $harga * $qty;
                 }
             }
-            
+
             if ($totalQtyForAvg > 0) {
                 $hpp = $totalValueForAvg / $totalQtyForAvg;
                 $barang->hpp = round($hpp, 2);
@@ -625,98 +732,12 @@ class Kasir extends Component
     }
 
     /**
-     * Simpan penjualan sebagai draft
-     */
-    public function simpanDraft()
-    {
-        $this->validate([
-            'tanggal' => 'required|date',
-            'gudang_id' => 'required|exists:gudang,id',
-            'kas_id' => 'nullable|exists:akun,id',
-            'diskon' => 'nullable|numeric|min:0|max:100',
-            'ppn_rate' => 'nullable|numeric|min:0',
-        ]);
-
-        if (empty($this->cart)) {
-            $this->dispatch('notify', message: 'Cart kosong.', type: 'error');
-            return;
-        }
-
-        $total = $this->getTotalProperty();
-
-        DB::transaction(function () use ($total) {
-            $userId = Auth::id();
-            $noPenjualan = $this->generateNoPenjualan();
-
-            $penjualan = ModelsPenjualan::create([
-                'no_penjualan' => $noPenjualan,
-                'tanggal' => $this->tanggal,
-                'gudang_id' => $this->gudang_id,
-                'kas_id' => $this->kas_id,
-                'diskon' => $this->diskon,
-                'ppn' => $this->ppn_amount,
-                'ppn_rate' => $this->ppn_rate,
-                'total' => $total,
-                'bayar' => $this->bayar,
-                'kembalian' => 0,
-                'status' => 'draft',
-                'keterangan' => $this->keterangan,
-                'inserted_user' => $userId,
-                'updated_user' => $userId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            foreach ($this->cart as $item) {
-                $penjualan->details()->create([
-                    'barang_id' => $item['barang_id'],
-                    'qty' => $item['qty'],
-                    'harga_satuan' => $item['harga'],
-                    'diskon' => $item['diskon_persen'] ?? 0,
-                    'subtotal' => $item['subtotal'],
-                ]);
-
-                $stok = Stok::where('barang_id', $item['barang_id'])
-                    ->where('gudang_id', $this->gudang_id)
-                    ->first();
-                if ($stok) {
-                    $stok->stok_akhir -= $item['qty'];
-                    if ($stok->stok_akhir < 0) {
-                        $stok->stok_akhir = 0;
-                    }
-                    $stok->save();
-
-                    KartuStok::create([
-                        'tanggal' => $this->tanggal,
-                        'barang_id' => $item['barang_id'],
-                        'gudang_id' => $this->gudang_id,
-                        'jenis_transaksi' => 'keluar',
-                        'qty_masuk' => 0,
-                        'qty_keluar' => $item['qty'],
-                        'stok_akhir' => $stok->stok_akhir,
-                        'referensi_id' => $penjualan->id,
-                        'referensi_tipe' => 'Penjualan',
-                        'keterangan' => 'Draft penjualan ' . $penjualan->no_penjualan,
-                        'inserted_user' => $userId,
-                    ]);
-                }
-            }
-
-            $this->updateJurnal($penjualan, $total, false);
-            $this->lastSale = $penjualan->load('details.barang');
-        });
-
-        $this->dispatch('notify', message: 'Penjualan disimpan sebagai draft.', type: 'success');
-        $this->clearCart();
-    }
-
-    /**
      * Edit penjualan yang ada
      */
     public function editPenjualan($id)
     {
         $penjualan = ModelsPenjualan::with(['details.barang', 'gudang'])->find($id);
-        
+
         if (!$penjualan) {
             $this->dispatch('notify', message: 'Penjualan tidak ditemukan.', type: 'error');
             return;
@@ -733,12 +754,11 @@ class Kasir extends Component
         $this->bayar = $penjualan->bayar;
         $this->keterangan = $penjualan->keterangan;
 
-        // Load cart from penjualan details
         $this->cart = $penjualan->details->map(function ($detail) {
             $stok = Stok::where('barang_id', $detail->barang_id)
                 ->where('gudang_id', $this->gudang_id)
                 ->first();
-            
+
             return [
                 'barang_id' => $detail->barang_id,
                 'kode' => $detail->barang->kode_barang ?? '',
@@ -747,7 +767,7 @@ class Kasir extends Component
                 'harga' => $detail->harga_satuan,
                 'qty' => $detail->qty,
                 'subtotal' => $detail->subtotal,
-                'stok' => $stok ? $stok->stok_akhir + $detail->qty : $detail->qty, // Tambah qty lama agar bisa dihapus
+                'stok' => $stok ? $stok->stok_akhir + $detail->qty : $detail->qty,
                 'diskon_persen' => $detail->diskon,
             ];
         })->toArray();
@@ -758,120 +778,131 @@ class Kasir extends Component
      */
     public function updatePenjualan()
     {
-        $this->validate([
-            'tanggal' => 'required|date',
-            'gudang_id' => 'required|exists:gudang,id',
-            'kas_id' => 'nullable|exists:akun,id',
-            'diskon' => 'nullable|numeric|min:0|max:100',
-            'ppn_rate' => 'nullable|numeric|min:0',
-        ]);
-
-        if (empty($this->cart)) {
-            $this->dispatch('notify', message: 'Cart kosong.', type: 'error');
+        if ($this->processing) {
             return;
         }
+        $this->processing = true;
 
-        $penjualan = ModelsPenjualan::with('details')->find($this->editPenjualanId);
-        
-        if (!$penjualan) {
-            $this->dispatch('notify', message: 'Penjualan tidak ditemukan.', type: 'error');
-            return;
-        }
-
-        $total = $this->getTotalProperty();
-        $userId = Auth::id();
-        $isLunas = $this->bayar >= $total;
-
-        DB::transaction(function () use ($penjualan, $total, $isLunas, $userId) {
-            $oldDetails = $penjualan->details;
-            
-            // Kembalikan stok lama
-            foreach ($oldDetails as $detail) {
-                $stok = Stok::where('barang_id', $detail->barang_id)
-                    ->where('gudang_id', $penjualan->gudang_id)
-                    ->first();
-                if ($stok) {
-                    $stok->stok_akhir += $detail->qty;
-                    $stok->save();
-                }
-            }
-
-            // Hapus kartu stok lama yang terkait dengan penjualan ini
-            KartuStok::where('referensi_id', $penjualan->id)
-                ->where('referensi_tipe', 'Penjualan')
-                ->delete();
-
-            // Hapus detail lama
-            $penjualan->details()->delete();
-
-            // Update penjualan
-            // Jika sudah lunas, status jadi selesai, jika belum tetap kunci/draft
-            $newStatus = $isLunas ? 'selesai' : ($penjualan->status === 'kunci' ? 'kunci' : 'draft');
-            $penjualan->update([
-                'tanggal' => $this->tanggal,
-                'gudang_id' => $this->gudang_id,
-                'kas_id' => $this->kas_id,
-                'diskon' => $this->diskon,
-                'ppn' => $this->ppn_amount,
-                'ppn_rate' => $this->ppn_rate,
-                'total' => $total,
-                'bayar' => $this->bayar,
-                'kembalian' => $isLunas ? $this->bayar - $total : 0,
-                'status' => $newStatus,
-                'keterangan' => $this->keterangan,
-                'updated_user' => $userId,
-                'updated_at' => now(),
+        try {
+            $this->validate([
+                'tanggal' => 'required|date',
+                'gudang_id' => 'required|exists:gudang,id',
+                'kas_id' => 'nullable|exists:akun,id',
+                'diskon' => 'nullable|numeric|min:0|max:100',
+                'ppn_rate' => 'nullable|numeric|min:0',
             ]);
 
-            // Tambah detail baru
-            foreach ($this->cart as $item) {
-                $penjualan->details()->create([
-                    'barang_id' => $item['barang_id'],
-                    'qty' => $item['qty'],
-                    'harga_satuan' => $item['harga'],
-                    'diskon' => $item['diskon_persen'] ?? 0,
-                    'subtotal' => $item['subtotal'],
+            if (empty($this->cart)) {
+                $this->dispatch('notify', message: 'Cart kosong.', type: 'error');
+                return;
+            }
+
+            $penjualan = ModelsPenjualan::with('details')->find($this->editPenjualanId);
+
+            if (!$penjualan) {
+                $this->dispatch('notify', message: 'Penjualan tidak ditemukan.', type: 'error');
+                return;
+            }
+
+            $total = $this->getTotalProperty();
+            $userId = Auth::id();
+            $isLunas = $this->bayar >= $total;
+
+            DB::transaction(function () use ($penjualan, $total, $isLunas, $userId) {
+                $oldDetails = $penjualan->details;
+
+                // Kembalikan stok lama (dengan lock) terlebih dahulu
+                $oldBarangIds = $oldDetails->pluck('barang_id')->unique()->sort();
+                foreach ($oldBarangIds as $barangId) {
+                    $stok = Stok::where('barang_id', $barangId)
+                        ->where('gudang_id', $penjualan->gudang_id)
+                        ->lockForUpdate()
+                        ->first();
+                    if ($stok) {
+                        $qtyLama = $oldDetails->where('barang_id', $barangId)->sum('qty');
+                        $stok->stok_akhir += $qtyLama;
+                        $stok->save();
+                    }
+                }
+
+                // Hapus kartu stok & detail lama yang terkait dengan penjualan ini
+                KartuStok::where('referensi_id', $penjualan->id)
+                    ->where('referensi_tipe', 'Penjualan')
+                    ->delete();
+                $penjualan->details()->delete();
+
+                // Validasi & kunci stok untuk cart baru (setelah stok lama dikembalikan)
+                $lockedStocks = $this->validateAndLockStock($this->cart, $this->gudang_id);
+
+                $newStatus = $isLunas ? 'selesai' : 'draft';
+                $penjualan->update([
+                    'tanggal' => $this->tanggal,
+                    'gudang_id' => $this->gudang_id,
+                    'kas_id' => $this->kas_id,
+                    'diskon' => $this->diskon,
+                    'ppn' => $this->ppn_amount,
+                    'ppn_rate' => $this->ppn_rate,
+                    'total' => $total,
+                    'bayar' => $this->bayar,
+                    'kembalian' => $isLunas ? $this->bayar - $total : 0,
+                    'status' => $newStatus,
+                    'keterangan' => $this->keterangan,
+                    'updated_user' => $userId,
+                    'updated_at' => now(),
                 ]);
 
-                // Kurangi stok
-                $stok = Stok::where('barang_id', $item['barang_id'])
-                    ->where('gudang_id', $this->gudang_id)
-                    ->first();
-                if ($stok) {
-                    $stok->stok_akhir -= $item['qty'];
-                    if ($stok->stok_akhir < 0) {
-                        $stok->stok_akhir = 0;
-                    }
-                    $stok->save();
-
-                    KartuStok::create([
-                        'tanggal' => $this->tanggal,
+                foreach ($this->cart as $item) {
+                    $penjualan->details()->create([
                         'barang_id' => $item['barang_id'],
-                        'gudang_id' => $this->gudang_id,
-                        'jenis_transaksi' => 'keluar',
-                        'qty_masuk' => 0,
-                        'qty_keluar' => $item['qty'],
-                        'stok_akhir' => $stok->stok_akhir,
-                        'referensi_id' => $penjualan->id,
-                        'referensi_tipe' => 'Penjualan',
-                        'keterangan' => 'Penjualan ' . $penjualan->no_penjualan,
-                        'inserted_user' => $userId,
+                        'qty' => $item['qty'],
+                        'harga_satuan' => $item['harga'],
+                        'diskon' => $item['diskon_persen'] ?? 0,
+                        'subtotal' => $item['subtotal'],
                     ]);
+
+                    $stok = $lockedStocks[$item['barang_id']] ?? null;
+                    if ($stok) {
+                        $stok->stok_akhir -= $item['qty'];
+                        if ($stok->stok_akhir < 0) {
+                            $stok->stok_akhir = 0;
+                        }
+                        $stok->save();
+
+                        KartuStok::create([
+                            'tanggal' => $this->tanggal,
+                            'barang_id' => $item['barang_id'],
+                            'gudang_id' => $this->gudang_id,
+                            'jenis_transaksi' => 'keluar',
+                            'qty_masuk' => 0,
+                            'qty_keluar' => $item['qty'],
+                            'stok_akhir' => $stok->stok_akhir,
+                            'referensi_id' => $penjualan->id,
+                            'referensi_tipe' => 'Penjualan',
+                            'keterangan' => 'Penjualan ' . $penjualan->no_penjualan,
+                            'inserted_user' => $userId,
+                        ]);
+                    }
                 }
-            }
 
-            // Hanya buat jurnal jika status menjadi selesai
-            if ($isLunas) {
-                $this->updateJurnal($penjualan, $total, $isLunas);
-            }
+                if ($isLunas) {
+                    $this->updateJurnal($penjualan, $total, $isLunas);
+                }
 
-            $this->lastSale = $penjualan->load('details.barang');
-        });
+                $this->lastSale = $penjualan->load('details.barang');
+            });
 
-        $this->dispatch('notify', message: 'Penjualan berhasil diupdate.', type: 'success');
-        $this->isEdit = false;
-        $this->editPenjualanId = null;
-        $this->clearCart();
+            $this->dispatch('notify', message: 'Penjualan berhasil diupdate.', type: 'success');
+            $this->isEdit = false;
+            $this->editPenjualanId = null;
+            $this->clearCart();
+        } catch (\RuntimeException $e) {
+            $this->dispatch('notify', message: $e->getMessage(), type: 'error');
+        } catch (\Throwable $e) {
+            Log::error('Gagal mengupdate penjualan: ' . $e->getMessage(), ['exception' => $e]);
+            $this->dispatch('notify', message: 'Terjadi kesalahan sistem saat mengupdate penjualan. Silakan coba lagi.', type: 'error');
+        } finally {
+            $this->processing = false;
+        }
     }
 
     /**
@@ -883,34 +914,27 @@ class Kasir extends Component
         $coaPiutang = \App\Models\Setting::getValue('coa_piutang', 10);
         $coaPendapatan = \App\Models\Setting::getValue('coa_pendapatan_penjualan', 10);
 
-        // Gunakan tanggal dari penjualan atau tanggal form
         $tanggalJurnal = $penjualan->tanggal ?? $this->tanggal;
 
-        // Cek apakah jurnal sudah ada (termasuk yang di-soft delete)
         $existingJurnal = Jurnal::withTrashed()
             ->where('referensi_id', $penjualan->id)
             ->where('referensi_tipe', 'Penjualan')
             ->first();
 
         if ($existingJurnal) {
-            // Restore jika soft deleted
             if ($existingJurnal->trashed()) {
                 $existingJurnal->restore();
             }
-            
-            // Update jurnal yang ada
+
             $existingJurnal->update([
                 'tanggal' => $tanggalJurnal,
                 'keterangan' => 'Penjualan ' . $penjualan->no_penjualan,
                 'updated_user' => $userId,
             ]);
 
-            // Hapus detail lama (termasuk yang soft deleted)
             $existingJurnal->details()->withTrashed()->forceDelete();
 
-            // Buat detail baru
             if ($isLunas && $penjualan->kas_id) {
-                // Jika lunas: Debit Kas, Kredit Pendapatan
                 $akunKas = Akun::find($penjualan->kas_id);
                 $akunPendapatan = Akun::find($coaPendapatan);
 
@@ -927,7 +951,6 @@ class Kasir extends Component
                     'kredit' => $total,
                 ]);
             } else {
-                // Jika belum lunas: Debit Piutang, Kredit Pendapatan
                 $akunPiutang = Akun::find($coaPiutang);
                 $akunPendapatan = Akun::find($coaPendapatan);
 
@@ -945,7 +968,6 @@ class Kasir extends Component
                 ]);
             }
         } else {
-            // Buat jurnal baru jika belum ada
             $jurnal = Jurnal::create([
                 'no_jurnal' => 'PJL-' . str_pad($penjualan->id, 5, '0', STR_PAD_LEFT),
                 'tanggal' => $tanggalJurnal,
@@ -956,7 +978,6 @@ class Kasir extends Component
             ]);
 
             if ($isLunas && $penjualan->kas_id) {
-                // Jika lunas: Debit Kas, Kredit Pendapatan
                 $akunKas = Akun::find($penjualan->kas_id);
                 $akunPendapatan = Akun::find($coaPendapatan);
 
@@ -973,7 +994,6 @@ class Kasir extends Component
                     'kredit' => $total,
                 ]);
             } else {
-                // Jika belum lunas: Debit Piutang, Kredit Pendapatan
                 $akunPiutang = Akun::find($coaPiutang);
                 $akunPendapatan = Akun::find($coaPendapatan);
 
@@ -998,65 +1018,71 @@ class Kasir extends Component
      */
     public function returPenjualan($id)
     {
-        $penjualan = ModelsPenjualan::with('details')->find($id);
-        
-        if (!$penjualan) {
-            $this->dispatch('notify', message: 'Penjualan tidak ditemukan.', type: 'error');
+        if ($this->processing) {
             return;
         }
+        $this->processing = true;
 
-        if ($penjualan->status === 'selesai') {
-            $this->dispatch('notify', message: 'Penjualan sudah selesai, tidak dapat diretur.', type: 'error');
-            return;
-        }
+        try {
+            $penjualan = ModelsPenjualan::with('details')->find($id);
 
-        if ($penjualan->status === 'retur') {
-            $this->dispatch('notify', message: 'Penjualan sudah dalam status retur.', type: 'error');
-            return;
-        }
-
-        DB::transaction(function () use ($penjualan) {
-            // Kembalikan stok
-            foreach ($penjualan->details as $detail) {
-                $stok = Stok::where('barang_id', $detail->barang_id)
-                    ->where('gudang_id', $penjualan->gudang_id)
-                    ->first();
-                if ($stok) {
-                    $stok->stok_akhir += $detail->qty;
-                    $stok->save();
-
-                    // Tambahkan kartu stok retur
-                    KartuStok::create([
-                        'tanggal' => $penjualan->tanggal,
-                        'barang_id' => $detail->barang_id,
-                        'gudang_id' => $penjualan->gudang_id,
-                        'jenis_transaksi' => 'masuk',
-                        'qty_masuk' => $detail->qty,
-                        'qty_keluar' => 0,
-                        'stok_akhir' => $stok->stok_akhir,
-                        'referensi_id' => $penjualan->id,
-                        'referensi_tipe' => 'Penjualan',
-                        'keterangan' => 'Retur penjualan ' . $penjualan->no_penjualan,
-                        'inserted_user' => Auth::id(),
-                    ]);
-                }
+            if (!$penjualan) {
+                $this->dispatch('notify', message: 'Penjualan tidak ditemukan.', type: 'error');
+                return;
             }
 
-            // Hapus jurnal yang terkait dengan penjualan ini
-            $penjualan->jurnal()->delete();
+            if ($penjualan->status === 'selesai') {
+                $this->dispatch('notify', message: 'Penjualan sudah selesai, tidak dapat diretur.', type: 'error');
+                return;
+            }
 
-            // Update penjualan menjadi retur agar tidak dihapus
-            $penjualan->update([
-                'status' => 'retur',
-                'bayar' => 0,
-                'kembalian' => 0,
-                'keterangan' => trim(($penjualan->keterangan ? $penjualan->keterangan . ' | ' : '') . 'Retur penjualan'),
-                'updated_user' => Auth::id(),
-                'updated_at' => now(),
-            ]);
-        });
+            if ($penjualan->status === 'retur') {
+                $this->dispatch('notify', message: 'Penjualan sudah dalam status retur.', type: 'error');
+                return;
+            }
 
-        $this->dispatch('notify', message: 'Penjualan berhasil diretur dan disimpan sebagai retur.', type: 'success');
+            DB::transaction(function () use ($penjualan) {
+                foreach ($penjualan->details as $detail) {
+                    $stok = Stok::where('barang_id', $detail->barang_id)
+                        ->where('gudang_id', $penjualan->gudang_id)
+                        ->lockForUpdate()
+                        ->first();
+                    if ($stok) {
+                        $stok->stok_akhir += $detail->qty;
+                        $stok->save();
+
+                        KartuStok::create([
+                            'tanggal' => $penjualan->tanggal,
+                            'barang_id' => $detail->barang_id,
+                            'gudang_id' => $penjualan->gudang_id,
+                            'jenis_transaksi' => 'masuk',
+                            'qty_masuk' => $detail->qty,
+                            'qty_keluar' => 0,
+                            'stok_akhir' => $stok->stok_akhir,
+                            'referensi_id' => $penjualan->id,
+                            'referensi_tipe' => 'Penjualan',
+                            'keterangan' => 'Retur penjualan ' . $penjualan->no_penjualan,
+                            'inserted_user' => Auth::id(),
+                        ]);
+                    }
+                }
+
+                $penjualan->jurnal()->delete();
+
+                $penjualan->update([
+                    'status' => 'retur',
+                    'bayar' => 0,
+                    'kembalian' => 0,
+                    'keterangan' => trim(($penjualan->keterangan ? $penjualan->keterangan . ' | ' : '') . 'Retur penjualan'),
+                    'updated_user' => Auth::id(),
+                    'updated_at' => now(),
+                ]);
+            });
+
+            $this->dispatch('notify', message: 'Penjualan berhasil diretur dan disimpan sebagai retur.', type: 'success');
+        } finally {
+            $this->processing = false;
+        }
     }
 
     public function viewReturnHistory($penjualanId)
@@ -1085,111 +1111,65 @@ class Kasir extends Component
     }
 
     /**
-     * Kunci penjualan (ubah draft menjadi kunci)
-     */
-    public function kunciPenjualan($id)
-    {
-        $penjualan = ModelsPenjualan::with('details')->find($id);
-        
-        if (!$penjualan) {
-            $this->dispatch('notify', message: 'Penjualan tidak ditemukan.', type: 'error');
-            return;
-        }
-
-        if ($penjualan->status === 'selesai') {
-            $this->dispatch('notify', message: 'Penjualan sudah selesai.', type: 'error');
-            return;
-        }
-
-        if ($penjualan->status === 'kunci') {
-            $this->dispatch('notify', message: 'Penjualan sudah dikunci.', type: 'error');
-            return;
-        }
-
-        $penjualan->update([
-            'status' => 'kunci',
-        ]);
-
-        $this->dispatch('notify', message: 'Penjualan berhasil dikunci.', type: 'success');
-    }
-
-    /**
-     * Tutup penjualan (ubah draft/kunci menjadi selesai)
-     */
-    public function tutupPenjualan($id)
-    {
-        $penjualan = ModelsPenjualan::with('details')->find($id);
-        
-        if (!$penjualan) {
-            $this->dispatch('notify', message: 'Penjualan tidak ditemukan.', type: 'error');
-            return;
-        }
-
-        if ($penjualan->status === 'selesai') {
-            $this->dispatch('notify', message: 'Penjualan sudah selesai.', type: 'error');
-            return;
-        }
-
-        $total = $penjualan->total;
-        $isLunas = $penjualan->bayar >= $total;
-
-        DB::transaction(function () use ($penjualan, $total, $isLunas) {
-            $penjualan->update([
-                'status' => 'selesai',
-                'kembalian' => $isLunas ? $penjualan->bayar - $total : 0,
-            ]);
-
-            // Update jurnal
-            $this->updateJurnal($penjualan, $total, $isLunas);
-        });
-
-        $this->dispatch('notify', message: 'Penjualan berhasil ditutup.', type: 'success');
-    }
-
-    /**
-     * Bayar penjualan (tambah pembayaran untuk penjualan yang belum lunas)
+     * Bayar penjualan (tambah pembayaran untuk penjualan yang belum lunas).
+     *
+     * Begitu total pembayaran mencapai/melebihi total tagihan, transaksi
+     * OTOMATIS ditutup (status -> "selesai") di sini. Tidak perlu lagi
+     * tombol "Tutup Penjualan" terpisah seperti sebelumnya — itu bahkan
+     * berisiko karena dulu bisa menutup transaksi yang belum lunas.
      */
     public function bayarPenjualan($id)
     {
-        $penjualan = ModelsPenjualan::find($id);
-        
-        if (!$penjualan) {
-            $this->dispatch('notify', message: 'Penjualan tidak ditemukan.', type: 'error');
+        if ($this->processing) {
             return;
         }
+        $this->processing = true;
 
-        if ($penjualan->status === 'selesai') {
-            $this->dispatch('notify', message: 'Penjualan sudah selesai.', type: 'error');
-            return;
-        }
+        try {
+            $penjualan = ModelsPenjualan::find($id);
 
-        // Use the component property directly
-        $jumlahBayar = $this->jumlahBayar;
-        
-        if ($jumlahBayar <= 0) {
-            $this->dispatch('notify', message: 'Jumlah pembayaran harus lebih dari 0.', type: 'error');
-            return;
-        }
-
-        $total = $penjualan->total;
-        $bayarBaru = $penjualan->bayar + $jumlahBayar;
-        $kembalian = $bayarBaru > $total ? $bayarBaru - $total : 0;
-
-        DB::transaction(function () use ($penjualan, $bayarBaru, $kembalian, $total) {
-            $penjualan->update([
-                'bayar' => $bayarBaru,
-                'kembalian' => $kembalian,
-            ]);
-
-            // Jika sudah lunas, update jurnal
-            if ($bayarBaru >= $total) {
-                $this->updateJurnal($penjualan, $total, true);
+            if (!$penjualan) {
+                $this->dispatch('notify', message: 'Penjualan tidak ditemukan.', type: 'error');
+                return;
             }
-        });
 
-        $this->dispatch('notify', message: 'Pembayaran berhasil diproses.', type: 'success');
-        
-        // Reset jumlah bayar
-        $this->jumlahBayar = 0;
+            if ($penjualan->status === 'selesai') {
+                $this->dispatch('notify', message: 'Penjualan sudah selesai.', type: 'error');
+                return;
+            }
+
+            $jumlahBayar = (float) $this->jumlahBayar;
+
+            if ($jumlahBayar <= 0) {
+                $this->dispatch('notify', message: 'Jumlah pembayaran harus lebih dari 0.', type: 'error');
+                return;
+            }
+
+            $total = $penjualan->total;
+            $bayarBaru = $penjualan->bayar + $jumlahBayar;
+            $isLunas = $bayarBaru >= $total;
+            $kembalian = $isLunas ? $bayarBaru - $total : 0;
+
+            DB::transaction(function () use ($penjualan, $bayarBaru, $kembalian, $total, $isLunas) {
+                $penjualan->update([
+                    'bayar' => $bayarBaru,
+                    'kembalian' => $kembalian,
+                    'status' => $isLunas ? 'selesai' : $penjualan->status,
+                ]);
+
+                if ($isLunas) {
+                    $this->updateJurnal($penjualan, $total, true);
+                }
+            });
+
+            $this->dispatch(
+                'notify',
+                message: $isLunas ? 'Pembayaran berhasil, penjualan lunas dan selesai.' : 'Pembayaran berhasil diproses.',
+                type: 'success'
+            );
+            $this->jumlahBayar = 0;
+        } finally {
+            $this->processing = false;
+        }
     }
 }

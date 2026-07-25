@@ -7,6 +7,38 @@
             </div>
         </div>
         <div class="card-body">
+            @if($viewing)
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Pemakaian Details: {{ $viewing->no_pemakaian }}</h5>
+                        <button type="button" class="close" wire:click="closeViewModal()">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Barang</th>
+                                    <th>Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($viewing->details as $detail)
+                                <tr>
+                                    <td>{{ $detail->barang->nama_barang ?? 'N/A' }}</td>
+                                    <td>{{ $detail->qty }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-secondary" wire:click="closeViewModal()">Close</button>
+                    </div>
+                </div>
+            @endif
+
             @if($isOpen)
                 @include('livewire.pemakaian.form')
             @endif
@@ -68,41 +100,4 @@
             {{ $pemakaians->links() }}
         </div>
     </div>
-
-    @if($viewing)
-    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Pemakaian Details: {{ $viewing->no_pemakaian }}</h5>
-                    <button type="button" class="close" wire:click="closeViewModal()">
-                        <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Barang</th>
-                                <th>Qty</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($viewing->details as $detail)
-                            <tr>
-                                <td>{{ $detail->barang->nama_barang ?? 'N/A' }}</td>
-                                <td>{{ $detail->qty }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" wire:click="closeViewModal()">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal-backdrop fade show" wire:click="closeViewModal()"></div>
-    @endif
-</div> 
+</div>

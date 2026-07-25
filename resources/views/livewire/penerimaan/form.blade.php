@@ -167,19 +167,24 @@
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="7" class="text-right"><strong>Subtotal:</strong></td>
-                            <td>
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">Rp</span>
-                                    </div>
-                                    <input type="text" class="form-control text-right" 
-                                           value="{{ number_format($this->subTotal, 0, ',', '.') }}" readonly>
-                                </div>
-                            </td>
-                        </tr>
+    <td colspan="6"></td>
+    <td class="text-right align-middle">
+        <strong>Subtotal</strong>
+    </td>
+    <td>
+        <div class="input-group input-group-sm">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Rp</span>
+            </div>
+            <input type="text"
+                class="form-control text-right"
+                value="{{ number_format($this->subTotal,0,',','.') }}"
+                readonly>
+        </div>
+    </td>
+</tr>
                         <tr>
-                            <td colspan="7" class="text-right"><strong>Diskon (Global):</strong></td>
+                            <td colspan="6" class="text-right"><strong>Diskon (Global):</strong></td>
                             <td>
                                 <div class="input-group">
                                     <input type="number" wire:model.live="diskon" class="form-control text-right" min="0" max="100" @if($isShow) readonly @endif>
