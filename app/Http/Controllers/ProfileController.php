@@ -68,5 +68,19 @@ class ProfileController extends Controller
 
         return Redirect::to('/');
     }
-    
+
+    /**
+     * Toggle the user's theme mode (dark/light) in database.
+     */
+    public function toggleMode(Request $request)
+    {
+        $user = Auth::user();
+        if ($user) {
+            $newMode = $user->mode === 'dark' ? 'light' : 'dark';
+            $user->mode = $newMode;
+            $user->save();
+            return response()->json(['success' => true, 'mode' => $newMode]);
+        }
+        return response()->json(['success' => false], 401);
+    }
 }

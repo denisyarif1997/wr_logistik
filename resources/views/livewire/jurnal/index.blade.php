@@ -40,6 +40,7 @@
                         <tr>
                             <th>No Jurnal</th>
                             <th>Tanggal</th>
+                            {{-- <TH>Jam</TH> --}}
                             <th>Keterangan</th>
                             <th>Referensi</th>
                             <th class="text-right">Total</th>
@@ -50,7 +51,8 @@
                         @forelse ($jurnals as $jurnal)
                             <tr>
                                 <td>{{ $jurnal->no_jurnal }}</td>
-                                <td>{{ \Carbon\Carbon::parse($jurnal->tanggal)->format('d-m-Y') }}</td>
+                                {{-- <td>{{ \Carbon\Carbon::parse($jurnal->created_at)->format('d-m-Y') }}</td> --}}
+                                <td> {{ $jurnal->created_at->timezone('Asia/Jakarta')->format('d-m-Y H:i:s') }}</td>
                                 <td>
                                     {{ $jurnal->keterangan }}
                                     <br>
@@ -60,6 +62,7 @@
                                         @endforeach
                                     </small>
                                 </td>
+                                
                                 <td>{{ $jurnal->referensi_tipe ?? 'Manual' }} #{{ $jurnal->referensi_id }}</td>
                                 <td class="text-right">{{ number_format($jurnal->details->sum('debit'), 2) }}</td>
                                 <td class="text-center">

@@ -47,8 +47,14 @@
                             <td>{{ $akun->tipe }}</td>
                             <td>
                                 <button wire:click="edit({{ $akun->id }})" class="btn btn-sm btn-primary">Edit</button>
-                                <button wire:click="delete({{ $akun->id }})" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
-                            </td>
+                   <buttonx-on:click.prevent="
+        if (confirm('Anda yakin ingin mengapus data ini, data yang di hapus tidak bisa dikembalikan?')) {
+            $wire.delete({{ $akun->id }});
+        }
+    "
+    class="btn btn-sm btn-danger">
+    Delete
+</buttonx-on:click.prevent=>                            </td>
                         </tr>
                     @endforeach
                 </tbody>

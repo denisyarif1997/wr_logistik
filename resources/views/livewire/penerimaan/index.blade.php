@@ -27,7 +27,7 @@
                     <label class="mb-1"><i class="fas fa-search mr-1"></i> Search</label>
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            {{-- <span class="input-group-text"><i class="fas fa-search"></i></span> --}}
                         </div>
                         <input wire:model.defer="search" wire:keydown.enter="$refresh" type="text" class="form-control" placeholder="Cari No Penerimaan, PO, atau Supplier...">
                         <div class="input-group-append">
