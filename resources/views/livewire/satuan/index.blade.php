@@ -27,18 +27,22 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        {{-- <th>Id Barang</th> --}}
-                        <th>Satuan Item</th>
-                        {{-- <th>Nama Satuan</th> --}}
+                        <!-- <th>Id Barang</th> -->
+                        <!-- <th>Kode Satuan</th> -->
+                        <th>Nama Satuan</th>
+                        <th>Created at</th>
+                        <th>Updated at</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($satuans as $satuan)
                         <tr>
-                            {{-- <td>{{ $satuan->id }}</td> --}}
+                            <!-- <td>{{ $satuan->id_barang }}</td> -->
                             <td>{{ $satuan->kode_satuan }}</td>
-                            {{-- <td>{{ $satuan->nama_satuan }}</td> --}}
+                            <!-- <td>{{ $satuan->nama_satuan }}</td> -->
+                            <td>{{ $satuan->created_at }}</td>
+                            <td>{{ $satuan->updated_at }}</td>
                             <td>
                                 <button wire:click="edit({{ $satuan->id }})" class="btn btn-sm btn-primary">Edit</button>
                                 <button wire:click="delete({{ $satuan->id }})" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>

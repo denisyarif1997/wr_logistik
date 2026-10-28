@@ -83,7 +83,7 @@
                                 <th>Ref</th>
                                 <th class="text-right">Masuk</th>
                                 <th class="text-right">Keluar</th>
-                                <th class="text-right">Saldo</th>
+                                <th class="text-right">Stok Akhir</th>
                                 <th>Ket</th>
                             </tr>
                         </thead>

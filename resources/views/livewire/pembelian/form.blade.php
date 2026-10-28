@@ -152,7 +152,7 @@
                                     <option value="0">0% (Tanpa PPN)</option>
                                     @foreach($ppnMasters as $ppnMaster)
                                         <option value="{{ $ppnMaster->rate }}">
-                                            {{ $ppnMaster->kode_ppn }} - {{ $ppnMaster->rate }}%
+                                            {{ $ppnMaster->rate }}%
                                         </option>
                                     @endforeach
                                 </select>
@@ -208,7 +208,7 @@
                                         <div class="dropdown-menu dropdown-menu-right">
                                             @foreach($ppnMasters as $ppnMaster)
                                                 <a class="dropdown-item" href="#" wire:click.prevent="calculateGlobalPPNWithRate({{ $ppnMaster->rate }})">
-                                                    {{ $ppnMaster->kode_ppn }} - {{ $ppnMaster->rate }}%
+                                                     {{ $ppnMaster->rate }}%
                                                 </a>
                                             @endforeach
                                             <div class="dropdown-divider"></div>
