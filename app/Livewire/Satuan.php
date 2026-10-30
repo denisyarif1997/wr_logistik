@@ -10,9 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class Satuan extends Component
 {
-
-
     use WithPagination;
+    use \App\Traits\Exportable;
 
     protected $paginationTheme = 'bootstrap';
 
@@ -40,6 +39,28 @@ class Satuan extends Component
             ->paginate(10);
 
         return view('livewire.satuan.index', compact('satuans'));
+    }
+
+    public function export()
+    {
+        $searchTerm = '%' . $this->search . '%';
+        $satuans = ModelsSatuan::query()
+            ->when($this->search, function ($query) use ($searchTerm) {
+                $query->where('kode_satuan', 'like', $searchTerm);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $headers = ['Kode Satuan', 'Tanggal Dibuat', 'Terakhir Diperbarui'];
+        $rows = $satuans->map(function ($s) {
+            return [
+                $s->kode_satuan,
+                $s->created_at ? $s->created_at->format('Y-m-d H:i') : '',
+                $s->updated_at ? $s->updated_at->format('Y-m-d H:i') : '',
+            ];
+        });
+
+        return $this->downloadCsv('data_satuan', $headers, $rows);
     }
 
     public function create()

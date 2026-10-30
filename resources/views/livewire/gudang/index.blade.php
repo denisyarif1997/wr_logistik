@@ -3,6 +3,10 @@
         <div class="card-header">
             <h3 class="card-title">Gudang</h3>
             <div class="card-tools">
+                <button wire:click="export" wire:loading.attr="disabled" class="btn btn-sm btn-outline-success mr-2" title="Export File Excel/CSV">
+                    <span wire:loading.remove wire:target="export"><i class="ri-file-excel-2-line mr-1"></i> Export File</span>
+                    <span wire:loading wire:target="export"><i class="ri-loader-4-line ri-spin mr-1"></i> Exporting...</span>
+                </button>
                 <button wire:click="create()" class="btn btn-sm btn-info">New Gudang</button>
             </div>
         </div>

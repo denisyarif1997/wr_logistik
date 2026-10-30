@@ -1,7 +1,7 @@
 <div>
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title"><i class="fas fa-exchange-alt mr-2"></i>Transfer Barang</h3>
+            <h3 class="card-title"><i class="fas fa-exchange-alt mr-2"></i> Transfer Barang</h3>
             <div class="card-tools">
                 @if($showForm)
                     <button wire:click="$set('showForm', false)" class="btn btn-secondary">

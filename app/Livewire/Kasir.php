@@ -60,6 +60,13 @@ class Kasir extends Component
                                // dipakai lagi untuk transaksi baru; hanya mungkin muncul di data lama.
     public $jumlahBayar = 0; // Jumlah pembayaran tambahan
 
+    // Tab dan Modal POS
+    public $activeTab = 'pos'; // 'pos' or 'history'
+    public $filterStatus = ''; // Filter status transaksi di tab riwayat
+    public $showSuccessModal = false;
+    public $showModalBayar = false;
+    public $selectedBayarSale = null;
+
     // Guard flag: mencegah eksekusi ganda (double-click / double-submit)
     public $processing = false;
 
@@ -70,6 +77,11 @@ class Kasir extends Component
 
     public function mount()
     {
+        if (request()->has('edit') || request()->has('view')) {
+            $this->activeTab = 'pos';
+        } elseif (request()->get('tab') === 'history') {
+            $this->activeTab = 'history';
+        }
         $this->tanggal = date('Y-m-d');
         $this->startDate = now()->subMonth()->format('Y-m-d');
         $this->endDate = now()->format('Y-m-d');
@@ -166,6 +178,11 @@ class Kasir extends Component
         $this->resetPage();
     }
 
+    public function updatingFilterStatus()
+    {
+        $this->resetPage();
+    }
+
     public function render()
     {
         $gudangs = Gudang::all();
@@ -182,11 +199,17 @@ class Kasir extends Component
         $total = $this->getTotalProperty();
         $kembalian = $this->bayar > $total ? $this->bayar - $total : 0;
         $quickCashOptions = $this->getQuickCashOptionsProperty();
+        $searchResults = $this->getSearchResultsProperty();
+        $todayStats = $this->getTodayStatsProperty();
+        $catalogProducts = $this->getCatalogProductsProperty();
 
         // Get penjualan list
         $penjualans = ModelsPenjualan::with(['gudang', 'creator', 'details'])
             ->where(function ($query) {
                 $query->whereRaw('LOWER(no_penjualan) LIKE ?', ['%' . strtolower($this->search) . '%']);
+            })
+            ->when($this->filterStatus, function ($query) {
+                $query->where('status', $this->filterStatus);
             })
             ->whereBetween('tanggal', [$this->startDate, $this->endDate])
             ->orderBy('created_at', 'desc')
@@ -200,7 +223,10 @@ class Kasir extends Component
             'total',
             'kembalian',
             'penjualans',
-            'quickCashOptions'
+            'quickCashOptions',
+            'searchResults',
+            'todayStats',
+            'catalogProducts'
         ));
     }
 
@@ -246,6 +272,102 @@ class Kasir extends Component
         sort($options);
 
         return array_slice($options, 0, 4);
+    }
+
+    public function getTodayStatsProperty()
+    {
+        $today = now()->format('Y-m-d');
+        $todaySales = ModelsPenjualan::whereDate('tanggal', $today)->get();
+
+        return [
+            'count' => $todaySales->count(),
+            'total_omzet' => $todaySales->where('status', '!=', 'retur')->sum('total'),
+            'lunas_count' => $todaySales->where('status', 'selesai')->count(),
+            'pending_count' => $todaySales->where('status', 'draft')->count(),
+        ];
+    }
+
+    public function getSearchResultsProperty()
+    {
+        $term = trim($this->barcodeSearch);
+        if (strlen($term) < 2) {
+            return [];
+        }
+
+        $barangs = Barang::where('is_jual', true)
+            ->where(function ($q) use ($term) {
+                $lower = '%' . strtolower($term) . '%';
+                $q->whereRaw('LOWER(nama_barang) LIKE ?', [$lower])
+                  ->orWhereRaw('LOWER(kode_barang) LIKE ?', [$lower])
+                  ->orWhere('barcode', 'LIKE', '%' . $term . '%');
+            })
+            ->limit(10)
+            ->get();
+
+        $gudangId = $this->gudang_id;
+        return $barangs->map(function ($b) use ($gudangId) {
+            $stok = Stok::where('barang_id', $b->id)
+                ->where('gudang_id', $gudangId)
+                ->first();
+
+            return [
+                'id' => $b->id,
+                'nama' => $b->nama_barang,
+                'kode' => $b->kode_barang,
+                'barcode' => $b->barcode,
+                'satuan' => $b->satuan,
+                'harga' => self::hitungHargaJual($b),
+                'stok' => $stok ? (float) $stok->stok_akhir : 0,
+            ];
+        });
+    }
+
+    public function selectSearchResult($barangId)
+    {
+        $this->addToCart($barangId);
+        $this->barcodeSearch = '';
+        $this->dispatch('focus-barcode');
+    }
+
+    public function getCatalogProductsProperty()
+    {
+        $term = trim($this->barcodeSearch);
+        $gudangId = $this->gudang_id;
+
+        $query = Barang::where('is_jual', true)
+            ->when(!empty($term), function ($q) use ($term) {
+                $lower = '%' . strtolower($term) . '%';
+                $q->where(function ($sub) use ($lower, $term) {
+                    $sub->whereRaw('LOWER(nama_barang) LIKE ?', [$lower])
+                        ->orWhereRaw('LOWER(kode_barang) LIKE ?', [$lower])
+                        ->orWhere('barcode', 'LIKE', '%' . $term . '%');
+                });
+            })
+            ->orderBy('nama_barang', 'asc');
+
+        $cartCounts = collect($this->cart)->pluck('qty', 'barang_id')->toArray();
+
+        return $query->limit(24)->get()->map(function ($b) use ($gudangId, $cartCounts) {
+            $stok = Stok::where('barang_id', $b->id)
+                ->where('gudang_id', $gudangId)
+                ->first();
+
+            return [
+                'id' => $b->id,
+                'nama' => $b->nama_barang,
+                'kode' => $b->kode_barang,
+                'barcode' => $b->barcode,
+                'satuan' => $b->satuan,
+                'harga' => self::hitungHargaJual($b),
+                'stok' => $stok ? (float) $stok->stok_akhir : 0,
+                'in_cart' => $cartCounts[$b->id] ?? 0,
+            ];
+        });
+    }
+
+    public function setTab($tab)
+    {
+        $this->activeTab = $tab;
     }
 
     public function setBayar($amount)
@@ -327,6 +449,7 @@ class Kasir extends Component
         }
 
         if (!$barang || !$barang->is_jual) {
+            $this->dispatch('pos-beep-error');
             $this->dispatch('notify', message: 'Barang tidak ditemukan atau tidak dapat dijual.', type: 'error');
             $this->barcode = '';
             $this->dispatch('focus-barcode');
@@ -347,6 +470,7 @@ class Kasir extends Component
             $barang = Barang::find($barang);
         }
         if (!$barang || !$barang->is_jual) {
+            $this->dispatch('pos-beep-error');
             $this->dispatch('notify', message: 'Barang tidak dapat dijual.', type: 'error');
             return;
         }
@@ -363,6 +487,7 @@ class Kasir extends Component
         $stokAkhir = $stok ? $stok->stok_akhir : 0;
 
         if ($stokAkhir <= 0) {
+            $this->dispatch('pos-beep-error');
             $this->dispatch('notify', message: 'Stok ' . $barang->nama_barang . ' habis di gudang ini.', type: 'error');
             return;
         }
@@ -372,6 +497,7 @@ class Kasir extends Component
             if ($item['barang_id'] == $barang->id) {
                 $newQty = $item['qty'] + 1;
                 if ($newQty > $stokAkhir) {
+                    $this->dispatch('pos-beep-error');
                     $this->dispatch('notify', message: 'Qty melebihi stok tersedia (' . $stokAkhir . ').', type: 'error');
                     return;
                 }
@@ -381,6 +507,8 @@ class Kasir extends Component
                     $newQty,
                     $item['diskon_persen'] ?? 0
                 );
+                $this->dispatch('pos-beep-add');
+                $this->dispatch('focus-barcode');
                 return;
             }
         }
@@ -397,6 +525,7 @@ class Kasir extends Component
             'diskon_persen' => 0,
         ];
 
+        $this->dispatch('pos-beep-add');
         $this->dispatch('focus-barcode');
     }
 
@@ -409,6 +538,7 @@ class Kasir extends Component
         }
         if (isset($this->cart[$key])) {
             if ($qty > $this->cart[$key]['stok']) {
+                $this->dispatch('pos-beep-error');
                 $this->dispatch('notify', message: 'Qty melebihi stok tersedia (' . $this->cart[$key]['stok'] . ').', type: 'error');
                 return;
             }
@@ -418,6 +548,20 @@ class Kasir extends Component
                 $qty,
                 $this->cart[$key]['diskon_persen'] ?? 0
             );
+        }
+    }
+
+    public function incrementQty($key)
+    {
+        if (isset($this->cart[$key])) {
+            $this->updateQty($key, $this->cart[$key]['qty'] + 1);
+        }
+    }
+
+    public function decrementQty($key)
+    {
+        if (isset($this->cart[$key])) {
+            $this->updateQty($key, $this->cart[$key]['qty'] - 1);
         }
     }
 
@@ -447,12 +591,15 @@ class Kasir extends Component
     public $returnHistory = [];
     public $selectedReturnSale = null;
 
-    public function clearCart()
+    public function clearCart($keepLastSale = false)
     {
         $this->cart = [];
         $this->bayar = 0;
         $this->keterangan = '';
-        $this->lastSale = null;
+        if (!$keepLastSale) {
+            $this->lastSale = null;
+            $this->showSuccessModal = false;
+        }
         $this->diskon = 0;
         $this->ppn_rate = 0;
         $this->ppn_amount = 0;
@@ -470,11 +617,44 @@ class Kasir extends Component
         $this->dispatch('focus-barcode');
     }
 
+    public function closeSuccessModal()
+    {
+        $this->showSuccessModal = false;
+        $this->lastSale = null;
+        $this->dispatch('focus-barcode');
+    }
+
+    public function openBayarModal($id)
+    {
+        $penjualan = ModelsPenjualan::find($id);
+        if ($penjualan) {
+            $this->selectedBayarSale = $penjualan;
+            $this->jumlahBayar = max(0, $penjualan->total - $penjualan->bayar);
+            $this->showModalBayar = true;
+        }
+    }
+
+    public function closeBayarModal()
+    {
+        $this->showModalBayar = false;
+        $this->selectedBayarSale = null;
+        $this->jumlahBayar = 0;
+    }
+
+    public function prosesBayarModal()
+    {
+        if ($this->selectedBayarSale) {
+            $id = $this->selectedBayarSale->id;
+            $this->bayarPenjualan($id);
+            $this->closeBayarModal();
+        }
+    }
+
     public function resetKasir()
     {
         $this->isView = false;
         $this->viewPenjualan = null;
-        $this->clearCart();
+        $this->clearCart(false);
     }
 
     public function updatedGudangId()
@@ -642,12 +822,14 @@ class Kasir extends Component
                 $this->lastSale = $penjualan->load('details.barang');
             });
 
+            $this->showSuccessModal = true;
+            $this->dispatch('pos-beep-success');
             $this->dispatch(
                 'notify',
                 message: $isLunas ? 'Penjualan berhasil disimpan dan lunas.' : 'Penjualan disimpan, menunggu pelunasan.',
                 type: 'success'
             );
-            $this->clearCart();
+            $this->clearCart(true);
         } catch (\RuntimeException $e) {
             // Error bisnis (mis. stok tidak cukup) -> tampilkan pesan apa adanya
             $this->dispatch('notify', message: $e->getMessage(), type: 'error');
@@ -891,10 +1073,12 @@ class Kasir extends Component
                 $this->lastSale = $penjualan->load('details.barang');
             });
 
+            $this->showSuccessModal = true;
+            $this->dispatch('pos-beep-success');
             $this->dispatch('notify', message: 'Penjualan berhasil diupdate.', type: 'success');
             $this->isEdit = false;
             $this->editPenjualanId = null;
-            $this->clearCart();
+            $this->clearCart(true);
         } catch (\RuntimeException $e) {
             $this->dispatch('notify', message: $e->getMessage(), type: 'error');
         } catch (\Throwable $e) {

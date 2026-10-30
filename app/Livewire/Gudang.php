@@ -10,6 +10,7 @@ use Livewire\WithPagination;
 class Gudang extends Component
 {
     use WithPagination;
+    use \App\Traits\Exportable;
 
     protected $paginationTheme = 'bootstrap';
 
@@ -35,6 +36,26 @@ class Gudang extends Component
             ->paginate(10);
 
         return view('livewire.gudang.index', compact('gudangs'));
+    }
+
+    public function export()
+    {
+        $gudangs = ModelsGudang::where('nama_gudang', 'like', '%' . $this->search . '%')
+            ->with(['creator', 'updater'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $headers = ['Nama Gudang', 'Lokasi', 'Dibuat Oleh', 'Terakhir Diperbarui'];
+        $rows = $gudangs->map(function ($g) {
+            return [
+                $g->nama_gudang,
+                $g->lokasi,
+                $g->creator->name ?? '-',
+                $g->updated_at ? $g->updated_at->format('Y-m-d H:i') : '',
+            ];
+        });
+
+        return $this->downloadCsv('data_gudang', $headers, $rows);
     }
 
     public function create()

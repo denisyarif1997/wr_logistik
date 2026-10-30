@@ -139,7 +139,7 @@
                             <div class="input-group">
                                 <input type="number" wire:model.lazy="details.{{$index}}.diskon" class="form-control" min="0" max="100" @if($isShow) readonly @endif>
                                 <div class="input-group-append">
-                                    <span class="input-group-text">%</span>
+                                    {{-- <span class="input-group-text">%</span> --}}
                                 </div>
                             </div>
                             @error('details.'.$index.'.diskon') <span class="text-danger">{{ $message }}</span>@enderror
@@ -190,7 +190,7 @@
                             <div class="input-group">
                                 <input type="number" wire:model.lazy="diskon" class="form-control text-right" min="0" max="100" @if($isShow) readonly @endif>
                                 <div class="input-group-append">
-                                    <span class="input-group-text">%</span>
+                                    {{-- <span class="input-group-text">%</span> --}}
                                 </div>
                             </div>
                         </td>

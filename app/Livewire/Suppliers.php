@@ -10,6 +10,7 @@ use Livewire\WithPagination;
 class Suppliers extends Component
 {
     use WithPagination;
+    use \App\Traits\Exportable;
 
     protected $paginationTheme = 'bootstrap';
 
@@ -39,6 +40,28 @@ class Suppliers extends Component
             ->paginate(10);
 
         return view('livewire.suppliers', compact('suppliers'));
+    }
+
+    public function export()
+    {
+        $suppliers = ModelsSuppliers::whereNull('deleted_at')
+            ->whereRaw('LOWER(nama_supplier) LIKE ?', ['%'.strtolower($this->search).'%'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $headers = ['Nama Supplier', 'Alamat', 'Telepon', 'Email', 'NPWP', 'Tanggal Dibuat'];
+        $rows = $suppliers->map(function ($s) {
+            return [
+                $s->nama_supplier,
+                $s->alamat,
+                $s->telepon,
+                $s->email,
+                $s->npwp,
+                $s->created_at ? $s->created_at->format('Y-m-d H:i') : '',
+            ];
+        });
+
+        return $this->downloadCsv('data_supplier', $headers, $rows);
     }
 
     public function create()

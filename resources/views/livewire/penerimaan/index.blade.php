@@ -1,7 +1,7 @@
 <div>
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title"><i class="fas fa-truck-loading mr-2"></i>Penerimaan Barang</h3>
+            <h3 class="card-title"><i class="fas fa-truck-loading mr-2"></i> Penerimaan Barang</h3>
             <div class="card-tools">
                 <button wire:click="create()" class="btn btn-primary">
                     <i class="fas fa-plus mr-1"></i> New Penerimaan

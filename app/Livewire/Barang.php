@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 class Barang extends Component
 {
     use WithPagination;
+    use \App\Traits\Exportable;
 
     protected $paginationTheme = 'bootstrap';
 
@@ -67,6 +68,66 @@ class Barang extends Component
         $satuans = \App\Models\Satuan::all();
             // dd($satuans);
         return view('livewire.barang.index', compact('barangs','satuans'));
+    }
+
+    public function export()
+    {
+        $searchTerm = '%' . $this->search . '%';
+        $barangs = ModelsBarang::query()
+            ->select([
+                'barang.*',
+                'satuan.kode_satuan',
+                DB::raw('COALESCE(SUM(stok.stok_akhir), 0) as stok_aktual')
+            ])
+            ->leftJoin('stok', 'barang.id', '=', 'stok.barang_id')
+            ->leftJoin('satuan', 'barang.satuan', '=', 'satuan.id')
+            ->when($this->search, function ($query) use ($searchTerm) {
+                $query->whereRaw("barang.nama_barang LIKE ?", [$searchTerm])
+                    ->orWhereRaw("barang.kode_barang LIKE ?", [$searchTerm]);
+            })
+            ->groupBy([
+                'barang.id',
+                'barang.kode_barang',
+                'barang.nama_barang',
+                'satuan.kode_satuan',
+                'barang.stok_minimum',
+                'barang.harga_beli_terakhir',
+                'barang.created_at'
+            ])
+            ->orderBy('barang.created_at', 'desc')
+            ->get();
+
+        $headers = [
+            'Kode Barang',
+            'Nama Barang',
+            'Barcode',
+            'Satuan',
+            'Stok Minimum',
+            'Stok Aktual',
+            'Harga Beli Terakhir',
+            'HPP',
+            'Dapat Dijual?',
+            'Margin Jual (%)',
+            'Tanggal Dibuat'
+        ];
+
+        $rows = $barangs->map(function ($b) {
+            return [
+                $b->kode_barang,
+                $b->nama_barang,
+                $b->barcode ?? '',
+                $b->kode_satuan ?? $b->satuan,
+                $b->stok_minimum,
+                $b->stok_aktual,
+                $b->harga_beli_terakhir,
+                $b->hpp ?? 0,
+                $b->is_jual ? 'Ya' : 'Tidak',
+                $b->margin_jual ?? 0,
+                $b->created_at ? $b->created_at->format('Y-m-d H:i') : ''
+            ];
+        });
+
+        return $this->downloadCsv('data_barang', $headers, $rows);
     }
 
 

@@ -2,7 +2,11 @@
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Barang</h3>
-            <div class="card-tools">
+            <div class="card-tools d-flex align-items-center">
+                <button wire:click="export" wire:loading.attr="disabled" class="btn btn-sm btn-outline-success mr-2" title="Export File Excel/CSV">
+                    <span wire:loading.remove wire:target="export"><i class="ri-file-excel-2-line mr-1"></i> Export File</span>
+                    <span wire:loading wire:target="export"><i class="ri-loader-4-line ri-spin mr-1"></i> Exporting...</span>
+                </button>
             @can('barang-create')
                 <button wire:click="create()" class="btn btn-sm btn-info">New Barang</button>
             @endcan
@@ -54,7 +58,7 @@
                             <td>{{ $barang->kode_barang }}</td>
                             <td>{{ $barang->nama_barang }}</td>
                             <td>{{ $barang->barcode }}</td>
-                            <td>{{ $barang->kode_satuan }}</td>
+                            <td>{{ $barang->satuan_kode_satuan }}</td>
                             <td>{{ $barang->stok_minimum }}</td>
                             <td>{{ $barang->stok_aktual ?? 0 }}</td>
                             <td>{{ $barang->harga_beli_terakhir }}</td>

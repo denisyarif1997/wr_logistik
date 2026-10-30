@@ -85,7 +85,10 @@
                     @can('gudang')
                     <li class="nav-item">
                         <a href="{{ route('admin.gudang.index') }}" wire:navigate.hover class="nav-link {{ Route::is('admin.gudang.index') ? 'active' : '' }}">
-                            <i class="ri-warehouse-line"></i>
+                            <!-- <i class="ri-warehouse-line"></i> -->
+                            <!-- <i class="bi bi-motherboard-fill"></i> -->
+                            <!-- <i class="bi bi-battery-full"></i> -->
+                            <i class="ri-home-5-fill"></i>
                             <span>Gudang</span>
                         </a>
                     </li>
@@ -186,9 +189,10 @@
                     @endcan
                     @can('kasir')
                     <li class="nav-item">
-                        <a href="{{ route('admin.kasir.index') }}" wire:navigate.hover class="nav-link {{ Route::is('admin.kasir.index') ? 'active' : '' }}">
-                            <i class="ri-cash-register-line"></i>
-                            <span>Kasir</span>
+                        <a href="{{ route('admin.kasir.index') }}" wire:navigate.hover class="nav-link {{ Route::is('admin.kasir.*') || Route::is('admin.penjualan.*') ? 'active' : '' }}">
+                            <!-- <i class="ri-cash-register-line"></i> -->
+                            <i class="ri-shopping-cart-2-line"></i>
+                            <span>POS Kasir</span>
                         </a>
                     </li>
                     @endcan
@@ -249,7 +253,8 @@
                     @can('hutang_supplier')
                     <li class="nav-item">
                         <a href="{{ route('admin.hutang-supplier.index') }}" wire:navigate.hover class="nav-link {{ Route::is('admin.hutang-supplier.index') ? 'active' : '' }}">
-                            <i class="ri-file-dollar-line"></i>
+                            <!-- <i class="ri-money-withdraw-line"></i> -->
+                            <i class="ri-hand-coin-line"></i>
                             <span>Hutang Supplier</span>
                         </a>
                     </li>
