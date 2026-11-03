@@ -39,6 +39,7 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        <th>No</th>
                         <th>Name</th>
                         <th>Alamat</th>
                         <th>telepon</th>
@@ -50,6 +51,7 @@
                 <tbody>
                     @foreach ($suppliers as $supplier)
                         <tr>
+                            <td>{{ $loop->iteration }}</td>
                             <td>{{ $supplier->nama_supplier }}</td>
                             <td>{{ $supplier->alamat }}</td>
                             <td>{{ $supplier->telepon }}</td>

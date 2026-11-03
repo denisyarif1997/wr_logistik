@@ -33,6 +33,7 @@
                     <tr>
                         <!-- <th>Id Barang</th> -->
                         <!-- <th>Kode Satuan</th> -->
+                        <th>No</th>
                         <th>Nama Satuan</th>
                         <th>Created at</th>
                         <th>Updated at</th>
@@ -42,7 +43,8 @@
                 <tbody>
                     @foreach ($satuans as $satuan)
                         <tr>
-                            <!-- <td>{{ $satuan->id_barang }}</td> -->
+                            {{-- <!-- <td>{{ $satuan->id_barang }}</td> --> --}}
+                            <td>{{ $loop->iteration }}</td>
                             <td>{{ $satuan->kode_satuan }}</td>
                             <!-- <td>{{ $satuan->nama_satuan }}</td> -->
                             <td>{{ $satuan->created_at }}</td>

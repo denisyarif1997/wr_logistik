@@ -11,6 +11,7 @@
             <table class="table table-striped" id="roleTable">
                 <thead>
                     <tr>
+                        <td>No</td>
                         <th>Name</th>
                         <th>Created</th>
                         <th>Permission</th>
@@ -21,6 +22,7 @@
                 <tbody>
                     @foreach ($data as $role)
                         <tr>
+                            <td>{{ $loop->iteration }}</td>
                             <td>{{ $role->name }}</td>
                             <td>{{ $role->created_at }}</td>
                             <td>

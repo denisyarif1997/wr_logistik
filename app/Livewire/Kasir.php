@@ -375,6 +375,31 @@ class Kasir extends Component
         $this->bayar = (float) $amount;
     }
 
+    /**
+     * Numpad: tambahkan digit ke nominal bayar.
+     */
+    public function appendNumpad($digit)
+    {
+        if ($this->isView) {
+            return;
+        }
+        $current = (string) ((int) $this->bayar);
+        $this->bayar = (float) ($current === '0' ? (string) $digit : $current . $digit);
+    }
+
+    public function clearNumpad()
+    {
+        if ($this->isView) {
+            return;
+        }
+        $this->bayar = 0;
+    }
+
+    public function focusBayar()
+    {
+        $this->dispatch('focus-bayar');
+    }
+
     public function hitungItemSubtotal($harga, $qty, $diskonPersen)
     {
         $totalHarga = $harga * $qty;

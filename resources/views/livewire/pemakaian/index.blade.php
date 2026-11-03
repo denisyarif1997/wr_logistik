@@ -68,6 +68,7 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        <th>No</th>
                         <th>No. Pemakaian</th>
                         <th>Tanggal Pakai</th>
                         <th>Departemen</th>
@@ -79,6 +80,7 @@
                 <tbody>
                     @foreach ($pemakaians as $pemakaian)
                         <tr>
+                            <td>{{ $loop->iteration }}</td>
                             <td>{{ $pemakaian->no_pemakaian }}</td>
                             <td>{{ $pemakaian->tanggal_pakai }}</td>
                             <td>{{ $pemakaian->departemen->nama_departemen ?? 'N/A' }}</td>

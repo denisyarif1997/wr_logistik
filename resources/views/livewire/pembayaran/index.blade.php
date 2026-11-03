@@ -16,7 +16,7 @@
     <!-- Data Penerimaan -->
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title"><i class="fas fa-truck-loading mr-2"></i>Data Penerimaan</h3>
+            <h3 class="card-title"><i class="fas fa-truck-loading mr-2"></i> Data Pembayaran</h3>
         </div>
         <div class="card-body">
             <div class="row align-items-end mb-3">
@@ -32,7 +32,7 @@
                     <label class="mb-1"><i class="fas fa-search mr-1"></i> Search</label>
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            {{-- <span class="input-group-text"><i class="fas fa-search"></i></span> --}}
                         </div>
                         <input wire:model.defer="search" wire:keydown.enter="$refresh" type="text" class="form-control" placeholder="Cari No Penerimaan, PO, atau Supplier...">
                         <div class="input-group-append">
@@ -49,7 +49,7 @@
                     <thead>
                         <tr>
                             <th width="5%">No</th>
-                            <th>No. Penerimaan</th>
+                            <th>No. Faktur</th>
                             <th>No. PO</th>
                             <th>Supplier</th>
                             <th>Tanggal Terima</th>
